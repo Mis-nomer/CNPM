@@ -1,0 +1,17 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+end_of_line = lf
+insert_final_newline = true
+# Never use star imports
+ij_java_names_count_to_use_import_on_demand = 999
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_layout_static_imports_separately = true
+ij_java_block_comment_at_first_column = false
+ij_java_line_comment_at_first_column = false
+ij_java_keep_first_column_comment = false
+ij_java_align_multiline_chained_methods = false
