@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import AdminLayout from './admin/AdminLayout'
-// import Dashboard from './admin/Dashboard'
+import Dashboard from './admin/Dashboard'
 import ListOrders from './admin/components/orders/ListOrders'
 import OrderDetail from './admin/components/orders/OrderDetail'
 import AddPro from './admin/components/product/AddPro'
@@ -25,44 +25,35 @@ function App() {
   return (
     <>
       <Routes>
-        {/* phần user*/}
         <Route path='/' element={<UserLayout />}>
           <Route index element={<Home />} />
-          {/* phần auth */}
           <Route path='signin' element={<Signin />} />
           <Route path='signup' element={<Signup />} />
-          {/* phần cart */}
           <Route path='cart' element={<Cart />} />
           <Route path='orders'>
             <Route path='add' element={<AddOrders />} />
             <Route path='detail/:id' element={<OrderDetail />} />
           </Route>
-          {/* phần quản lý thông tin cá nhân */}
           <Route path='thong-tin' element={<ThongTinAccount />} />
 
-          {/* phàn sản phảm theo danh mục */}
           <Route path='product/:type' element={<ProductList />} />
-          {/* phàn product */}
           <Route path='products/:id' element={<ProductDetail />} />
         </Route>
 
-        {/* phần admin */}
         <Route
           path='/admin'
           element={
-            // <PrivateRouter>
-            <AdminLayout />
-            // </PrivateRouter>
+            <PrivateRouter>
+              <AdminLayout />
+            </PrivateRouter>
           }
         >
-          {/* <Route index element={<Dashboard />} /> */}
-          {/* phần sản phẩm */}
+          <Route index element={<Dashboard />} />
           <Route path='products'>
             <Route index element={<ListPro />} />
             <Route path='add' element={<AddPro />} />
             <Route path=':id/edit' element={<EditPro />} />
           </Route>
-          {/* Phần user */}
           <Route path='user'>
             <Route index element={<ListUser />} />
             <Route path='add' element={<AddUser />} />

@@ -1,85 +1,82 @@
-import { Form, Input, message } from 'antd'
-import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { signup } from '../../../api/user'
+import { Form, Input, message } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
+import { signup } from '../../../api/user';
 
 const Signup = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
   const onFinish = async (values: any) => {
-    console.log('Success:', values)
-
-    const { data } = await signup(values)
-    if (data?.code == '00') {
-      console.log('data response', data?.data)
-      message.success('Đăng kí tài khoản thành công, chuyển sang trang đăng nhập sau 2s')
+    console.log('Success:', values);
+    const { data } = await signup(values);
+    if (data?.code === '00') {
+      console.log('data response', data?.data);
+      message.success('Đăng ký tài khoản thành công, chuyển sang trang đăng nhập sau 2s');
       setTimeout(() => {
-        navigate('/signin')
-      }, 2000)
+        navigate('/signin');
+      }, 2000);
     } else {
-      message.error(data?.data?.message)
+      message.error(data?.data?.message);
     }
-  }
+  };
+
   const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo)
-  }
+    console.log('Failed:', errorInfo);
+  };
+
   return (
-    <div>
-      <main className='mt-[10px] bg-white border-[1px] border-[#cccc] rounded-[10px] drop-shadow-md'>
-        <div className='min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 my-[10px]'>
-          <div className='max-w-lg w-full space-y-8'>
-            <div>
-              <h2 className='mt-6 text-center text-2xl font-extrabold text-[#e11b1e] uppercase'>ĐĂNG Ký</h2>
-              <p className='mt-2 text-center text-sm text-gray-600' />
-            </div>
-            <Form
-              initialValues={{}}
-              onFinish={onFinish}
-              onFinishFailed={onFinishFailed}
-              autoComplete='on'
-              labelCol={{ span: 24 }}
-            >
-              <Form.Item
-                name='name'
-                labelCol={{ span: 24 }}
-                label='Họ và tên'
-                rules={[{ required: true, message: 'Họ và tên không được trống!' }]}
-              >
-                <Input size='large' />
-              </Form.Item>
-              <Form.Item
-                name='email'
-                labelCol={{ span: 24 }}
-                label='Email'
-                rules={[{ required: true, message: 'Email không được trống!' }]}
-              >
-                <Input size='large' />
-              </Form.Item>
-              <Form.Item
-                name='password'
-                labelCol={{ span: 24 }}
-                label='Mật khẩu'
-                rules={[{ required: true, message: 'Mật khẩu không được trống!' }]}
-              >
-                <Input type='password' size='large' />
-              </Form.Item>
-
-              <Form.Item>
-                <button className='w-full px-6 py-2 mt-4 text-white bg-[#d70018] rounded-lg hover:bg-[#d70018]'>
-                  Đăng ký
-                </button>
-              </Form.Item>
-            </Form>
-            <div className='mt-6 text-grey-dark'>
-              Bạn đã có tài khoản?{' '}
-              <Link className='text-blue-600 hover:underline' to='/signin'>
-                Đăng nhập
-              </Link>
-            </div>
-          </div>
+    <div className="flex justify-center items-center h-screen bg-gray-100">
+      <div className="bg-white shadow-lg rounded-lg w-full max-w-md px-6 py-8">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 uppercase mb-2">Đăng ký</h2>
+          <p className="text-gray-600 text-sm">Vui lòng nhập thông tin đăng ký</p>
         </div>
-      </main>
+        <Form
+          initialValues={{}}
+          onFinish={onFinish}
+          onFinishFailed={onFinishFailed}
+          autoComplete="on"
+          layout="vertical"
+          className="mt-6"
+        >
+          <Form.Item
+            name="name"
+            label="Họ và tên"
+            rules={[{ required: true, message: 'Họ và tên không được trống!' }]}
+          >
+            <Input size="large" className="rounded-md border-gray-300 focus:border-red-600 focus:ring-red-600" />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ required: true, message: 'Email không được trống!' }]}
+          >
+            <Input size="large" className="rounded-md border-gray-300 focus:border-red-600 focus:ring-red-600" />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            label="Mật khẩu"
+            rules={[{ required: true, message: 'Mật khẩu không được trống!' }]}
+          >
+            <Input type="password" size="large" className="rounded-md border-gray-300 focus:border-red-600 focus:ring-red-600" />
+          </Form.Item>
+          <Form.Item>
+            <button
+              type="submit"
+              className="w-full px-4 py-2 font-medium text-center text-white bg-red-600 hover:bg-red-700 transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1"
+            >
+              Đăng ký
+            </button>
+          </Form.Item>
+        </Form>
+        <div className="text-gray-600 text-sm text-center mt-4">
+          Bạn đã có tài khoản?{' '}
+          <Link className="text-red-600 hover:underline" to="/signin">
+            Đăng nhập
+          </Link>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Signup
+export default Signup;

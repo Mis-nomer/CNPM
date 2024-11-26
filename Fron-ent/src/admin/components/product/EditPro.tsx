@@ -1,56 +1,91 @@
-import { useEffect, useState } from 'react'
-import { Typography, Col, Row, Button, Form, Input, InputNumber, Select, message, UploadFile } from 'antd'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { PlusSquareOutlined } from '@ant-design/icons'
-import Dragger from 'antd/lib/upload/Dragger'
+import { ProductType } from '@/type/Product'
+import { ArrowLeftOutlined, LoadingOutlined, PlusSquareOutlined } from '@ant-design/icons'
+import { Form, Input, InputNumber, message, Select, UploadFile } from 'antd'
 import { UploadProps } from 'antd/es/upload'
+import Dragger from 'antd/es/upload/Dragger'
 import { RcFile } from 'antd/lib/upload'
+import { useEffect, useState } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { upload } from '../../../api/images'
 import { editPro, listOnePro } from '../../../api/products'
-import styled from 'styled-components'
-import ReactQuill from 'react-quill'
-import { ProductType } from '@/type/Product'
+
 const { Option } = Select
+
+const optionsByCategory1: any = {
+  productTypes: [
+    'dienthoai',
+    'laptop',
+    'tablet',
+    'amthanh',
+    'dongho',
+    'nhathongminh',
+    'phukien',
+    'pc_manhinh',
+    'tivi',
+    'hangcu'
+  ]
+}
+
+const typeDisplayNames: { [key: string]: string } = {
+  dienthoai: 'Điện thoại',
+  laptop: 'Laptop',
+  tablet: 'Máy tính bảng',
+  amthanh: 'Âm thanh',
+  dongho: 'Đồng hồ',
+  nhathongminh: 'Nhà thông minh',
+  phukien: 'Phụ kiện',
+  pc_manhinh: 'PC-Màn hình',
+  tivi: 'Tivi',
+  hangcu: 'Hàng cũ'
+}
+
 const optionsByCategory: any = {
   dienthoai: ['Apple', 'Samsung', 'Xiaomi', 'Oppo', 'Realme', 'Nokia', 'Oneplus', 'Asus'],
-  laptop: ['Dell', 'HP', 'Lenovo'],
+  laptop: ['Dell', 'HP', 'Lenovo', 'Apple'],
   tablet: ['iPad', 'Samsung', 'Huawei'],
   amthanh: ['Sony', 'JBL', 'Bose'],
   dongho: ['Rolex', 'Casio', 'Omega'],
+  nhathongminh: ['Smart Home Hub', 'Smart Light', 'Smart Lock'],
   phukien: ['Charger', 'Headphones', 'Cables'],
+  pc_manhinh: ['Monitor', 'PC Parts', 'Desktop'],
+  tivi: ['Samsung TV', 'LG TV', 'Sony TV'],
   hangcu: ['Used Phone', 'Used Laptop', 'Used Tablet']
 }
 
-const EditPro: React.FC = () => {
+const EditPro = () => {
   const navigate = useNavigate()
-  const [rawHTML, setRawHTML] = useState('')
-  const [fileList, setfileList] = useState<UploadFile[] | any>([])
-  const [mutiFileList, setMutiFileList] = useState<UploadFile[] | any>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [brands, setBrands] = useState([])
-  const [form] = Form.useForm()
   const { id } = useParams()
+  const [form] = Form.useForm()
+
   const [pro, setPro] = useState<ProductType>()
-  // phần chọn ngành hàng và select ra thương hiệu
+  const [rawHTML, setRawHTML] = useState('')
+  const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [mutiFileList, setMutiFileList] = useState<UploadFile[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [brands, setBrands] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
   const handleCategoryChange = (value: string) => {
-    if (pro && pro?.type === value) {
-      setBrands(optionsByCategory[pro?.brand] || [])
-      setSelectedCategory(value)
+    if (pro && pro.type === value) {
+      setBrands(optionsByCategory[pro.type] || [])
     } else {
       setBrands(optionsByCategory[value] || [])
-      setSelectedCategory(value)
     }
+    setSelectedCategory(value)
     form.setFieldsValue({ brand: undefined })
   }
-  //---------------------------------------------------
 
-  // phầm ảnh sản phẩm
-  const handleChangeImage: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    setMutiFileList(newFileList)
+  const handleChangeImage: UploadProps['onChange'] = ({ fileList }) => {
+    setMutiFileList(fileList)
   }
-  const handleChangeThumbnail: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    setfileList(newFileList)
+
+  const handleChangeThumbnail: UploadProps['onChange'] = ({ fileList }) => {
+    setFileList(fileList)
   }
+
   const onPreview = async (file: UploadFile) => {
     let src = file.url as string
     if (!src) {
@@ -65,466 +100,431 @@ const EditPro: React.FC = () => {
     const imgWindow = window.open(src)
     imgWindow?.document.write(image.outerHTML)
   }
-  //---------------------------------------
 
   useEffect(() => {
     const getPro = async (id: number) => {
-      const { data } = await listOnePro(id)
-      setPro(data?.data)
-      if (data?.data?.type) {
-        handleCategoryChange(data?.data?.type)
+      try {
+        setIsLoading(true)
+        const { data } = await listOnePro(id)
+        setPro(data?.data)
+        form.setFieldsValue(data?.data)
+        setRawHTML(data?.data?.description)
+
+        if (data?.data?.type) {
+          handleCategoryChange(data?.data?.type)
+        }
+
+        if (data?.data?.thumbnail) {
+          setFileList([{
+            uid: '-1',
+            name: 'thumbnail.png',
+            status: 'done',
+            url: data?.data?.thumbnail
+          }])
+        }
+
+        if (data?.data?.image) {
+          setMutiFileList([{
+            uid: '-2',
+            name: 'image.png',
+            status: 'done',
+            url: data?.data?.image
+          }])
+        }
+      } catch (error) {
+        message.error('Không thể tải thông tin sản phẩm')
+      } finally {
+        setIsLoading(false)
       }
-      form.setFieldsValue(data?.data)
-      // if (data?.data) {
-      //   const convertImages = {
-      //     image: data?.data?.image,
-      //     thumbnail: data?.data?.image,
-      //     url: data?.data?.image
-      //   };
-      //    const convertImagesThumb = {
-      //      image: data?.data?.thumbnail,
-      //      thumbnail: data?.data?.thumbnail,
-      //      url: data?.data?.thumbnail
-      //    }
-      //   setfileList([convertImages]);
-      //   setMutiFileList([convertImagesThumb]);
-      // }
     }
 
-    getPro(Number(id))
+    if (id) {
+      getPro(Number(id))
+    }
   }, [id])
 
   const onFinish = async (values: any) => {
-    const imgLink = fileList[0]
-    const mutiImgLink = mutiFileList[0]
-
-    if (imgLink) {
-      values.thumbnail = await upload(imgLink)
-    } else {
-      values.thumbnail = pro?.thumbnail
-    }
-    if (mutiImgLink) {
-      values.image = await upload(mutiImgLink)
-    } else {
-      values.image = pro?.image
-    }
-    if (rawHTML) {
-      values.rawHTML = rawHTML
-    } else {
-      values.rawHTML = pro?.description
-    }
-    const valueEdit = {
-      id: Number(id),
-      image: values.image,
-      name: values?.name,
-      type: values?.type,
-      brand: values?.brand,
-      description: values.rawHTML,
-      battery: values?.battery,
-      cpu: values?.cpu,
-      operatingSystem: values?.operatingSystem,
-      ram: values?.ram,
-      screenReslution: values?.screenReslution,
-      screenSize: values?.screenSize,
-      storage: values?.storage,
-      thumbnail: values.thumbnail,
-      weight: values?.weight,
-      price: values?.price,
-      salePrice: values?.salePrice,
-      quantity: values?.quantity,
-      status: values?.status,
-      productView: values?.productView
-    }
     try {
-      const data = await editPro(valueEdit)
-      message.success('Cập nhật thành công')
+      setIsSubmitting(true)
+      let thumbnailUrl = pro?.thumbnail
+      let imageUrl = pro?.image
+
+      if (fileList[0]?.originFileObj) {
+        thumbnailUrl = await upload(fileList[0].originFileObj)
+      }
+
+      if (mutiFileList[0]?.originFileObj) {
+        imageUrl = await upload(mutiFileList[0].originFileObj)
+      }
+
+      const updateData: any = {
+        id: Number(id),
+        name: values.name,
+        type: values.type,
+        brand: values.brand,
+        description: rawHTML || pro?.description,
+        battery: values.battery,
+        cpu: values.cpu,
+        operatingSystem: values.operatingSystem,
+        ram: values.ram,
+        screenReslution: values.screenReslution,
+        screenSize: values.screenSize,
+        storage: values.storage,
+        weight: values.weight,
+        price: values.price,
+        salePrice: values.salePrice,
+        quantity: values.quantity,
+        status: values.status || pro?.status,
+        image: imageUrl,
+        thumbnail: thumbnailUrl,
+        productView: values.productView || pro?.productView
+      }
+
+      await editPro(updateData)
+      message.success('Cập nhật sản phẩm thành công')
       navigate('/admin/products')
-    } catch (err) {
-      message.error('Có lỗi xảy ra')
+    } catch (error) {
+      message.error('Có lỗi xảy ra khi cập nhật sản phẩm')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingOutlined className="text-4xl text-blue-600" />
+      </div>
+    )
   }
 
   return (
-    <>
-      <Breadcrumb>
-        <Typography.Title level={2} style={{ margin: 0 }}>
-          Cập nhât sản phẩm
-        </Typography.Title>
-      </Breadcrumb>
-      <Form form={form} initialValues={pro} onFinish={onFinish} onFinishFailed={onFinishFailed} autoComplete='on'>
-        <Row gutter={16}>
-          <Col span={10}>
-            <Form.Item name='thumbnail' labelCol={{ span: 24 }} label='Hình ảnh thumbal'>
-              <UploadWrapper>
-                <div style={{ textAlign: 'left', border: '0' }}>
-                  <Dragger
-                    listType='picture'
-                    multiple={false}
-                    maxCount={1}
-                    beforeUpload={() => {
-                      return false
-                    }}
-                    accept='image/png, image/jpg, image/jpeg, image/gif, image/webp'
-                    onChange={handleChangeThumbnail}
-                    onPreview={onPreview}
-                    fileList={fileList}
-                    style={{ border: '0' }}
-                  >
-                    <p className='ant-upload-drag-icon'>
-                      <PlusSquareOutlined style={{ fontSize: '50px' }} />
-                    </p>
-                    <p>Thêm ảnh!</p>
-                  </Dragger>
-                </div>
-              </UploadWrapper>
-            </Form.Item>
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Cập nhật sản phẩm</h1>
+          <p className="text-gray-500 mt-1">Chỉnh sửa thông tin sản phẩm</p>
+        </div>
+        <Link
+          to="/admin/products"
+          className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
+        >
+          <ArrowLeftOutlined className="mr-2" />
+          Quay lại danh sách
+        </Link>
+      </div>
 
-            <Form.Item name='image' labelCol={{ span: 24 }} label='Hình ảnh sản phẩm chi tiết'>
-              <UploadWrapper>
-                <div style={{ textAlign: 'left', border: '0' }}>
-                  <Dragger
-                    listType='picture'
-                    multiple={false}
-                    maxCount={1}
-                    beforeUpload={() => {
-                      return false
-                    }}
-                    accept='image/png, image/jpg, image/jpeg, image/gif, image/webp'
-                    onChange={handleChangeImage}
-                    onPreview={onPreview}
-                    fileList={mutiFileList}
-                    style={{ border: '0' }}
-                  >
-                    <p className='ant-upload-drag-icon'>
-                      <PlusSquareOutlined style={{ fontSize: '50px' }} />
-                    </p>
-                    <p>Thêm ảnh!</p>
-                  </Dragger>
-                </div>
-              </UploadWrapper>
+      <Form
+        form={form}
+        onFinish={onFinish}
+        layout="vertical"
+        className="bg-white rounded-xl shadow-sm p-6"
+        initialValues={pro}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="space-y-6">
+            <Form.Item
+              label={<span className="text-gray-700 font-medium">Hình ảnh thumbnail</span>}
+              className="mb-6"
+            >
+              <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-4 hover:border-blue-500 transition-colors">
+                <Dragger
+                  listType="picture"
+                  multiple={false}
+                  maxCount={1}
+                  beforeUpload={() => false}
+                  onChange={handleChangeThumbnail}
+                  onPreview={onPreview}
+                  fileList={fileList}
+                  className="bg-transparent"
+                >
+                  <div className="text-center p-4">
+                    <PlusSquareOutlined className="text-4xl text-gray-400" />
+                    <p className="mt-2 text-gray-500">Thay đổi ảnh thumbnail</p>
+                    <p className="text-xs text-gray-400 mt-1">PNG, JPG, JPEG hoặc GIF</p>
+                  </div>
+                </Dragger>
+              </div>
             </Form.Item>
-          </Col>
-
-          <Col span={14}>
-            <Typography.Title level={3}>Thông tin sản phẩm</Typography.Title>
 
             <Form.Item
-              name='name'
-              labelCol={{ span: 24 }}
-              label='Tên sản phẩm'
-              rules={[{ required: true, message: 'Tên sản phẩm không để trống!' }]}
+              label={<span className="text-gray-700 font-medium">Hình ảnh chi tiết</span>}
             >
-              <Input size='large' disabled />
+              <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-4 hover:border-blue-500 transition-colors">
+                <Dragger
+                  listType="picture"
+                  multiple={false}
+                  maxCount={1}
+                  beforeUpload={() => false}
+                  onChange={handleChangeImage}
+                  onPreview={onPreview}
+                  fileList={mutiFileList}
+                  className="bg-transparent"
+                >
+                  <div className="text-center p-4">
+                    <PlusSquareOutlined className="text-4xl text-gray-400" />
+                    <p className="mt-2 text-gray-500">Thay đổi ảnh chi tiết</p>
+                    <p className="text-xs text-gray-400 mt-1">PNG, JPG, JPEG hoặc GIF</p>
+                  </div>
+                </Dragger>
+              </div>
             </Form.Item>
+          </div>
 
-            <Row gutter={16}>
-              <Col span={12}>
+          {/* Right Column - Form Fields */}
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Basic Info */}
+              <div className="md:col-span-2">
                 <Form.Item
-                  name='price'
-                  label='Giá gốc'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Gíá sản phẩm không để trống!' }]}
+                  name="name"
+                  label="Tên sản phẩm"
+                  rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
                 >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    size='large'
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => (value ? value.replace(/\$\s?|(,*)/g, '') : '')}
-                  />
+                  <Input size="large" className="rounded-lg" disabled />
                 </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name='salePrice'
-                  label='Giá khuyến mại'
-                  dependencies={['price']}
-                  labelCol={{ span: 24 }}
-                  rules={[
-                    { required: true, message: 'Giá khuyến mại sản phẩm không để trống!' },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('price') <= value) {
-                          return Promise.reject(new Error('Giá khuyến mại phải nhỏ hơn giá gốc!'))
-                        } else {
-                          return Promise.resolve()
-                        }
+              </div>
+
+              {/* Prices */}
+              <Form.Item
+                name="price"
+                label="Giá gốc"
+                rules={[{ required: true, message: 'Vui lòng nhập giá gốc!' }]}
+              >
+                <InputNumber
+                  className="w-full rounded-lg"
+                  size="large"
+                  formatter={value => `${value} `.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="salePrice"
+                label="Giá khuyến mãi"
+                dependencies={['price']}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập giá khuyến mãi!' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('price') >= value) {
+                        return Promise.resolve()
                       }
-                    })
-                  ]}
-                >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    size='large'
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => (value ? value.replace(/\$\s?|(,*)/g, '') : '')}
-                  />
-                </Form.Item>
-              </Col>
+                      return Promise.reject(new Error('Giá khuyến mãi phải nhỏ hơn giá gốc!'))
+                    }
+                  })
+                ]}
+              >
+                <InputNumber
+                  className="w-full rounded-lg"
+                  size="large"
+                  formatter={value => `${value} `.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
 
-              <Col span={12}>
-                <Form.Item
-                  label='Ngành hàng'
-                  name='type'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Ngành hàng sản phẩm không để trống!' }]}
+              {/* Category & Brand */}
+              <Form.Item
+                name="type"
+                label="Danh mục"
+                rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
+              >
+                <Select
+                  size="large"
+                  disabled
+                  className="w-full rounded-lg"
                 >
-                  <Select
-                    style={{ width: '100%' }}
-                    size='large'
-                    placeholder='Lựa chọn'
-                    allowClear
-                    showSearch
-                    optionFilterProp='children'
-                    onChange={handleCategoryChange}
-                    disabled
-                  >
-                    <Select.Option value='dienthoai'>Điện thoại</Select.Option>
-                    <Select.Option value='laptop'>Laptop</Select.Option>
-                    <Select.Option value='tablet'>Tablet</Select.Option>
-                    <Select.Option value='amthanh'>Âm thanh</Select.Option>
-                    <Select.Option value='dongho'>Đồng hồ</Select.Option>
-                    <Select.Option value='phukien'>Phụ kiện</Select.Option>
-                    <Select.Option value='hangcu'>Hàng cũ</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label='Thương hiệu'
-                  name='brand'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Thương hiệu sản phẩm không để trống!' }]}
-                >
-                  <Select
-                    style={{ width: '100%' }}
-                    size='large'
-                    placeholder='Lựa chọn'
-                    allowClear
-                    showSearch
-                    optionFilterProp='children'
-                    disabled
-                  >
-                    {brands?.map((brand) => (
-                      <Option key={brand} value={brand}>
-                        {brand}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+                  {optionsByCategory1.productTypes.map((type: string) => (
+                    <Option key={type} value={type}>{typeDisplayNames[type]}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
+              <Form.Item
+                name="brand"
+                label="Thương hiệu"
+                rules={[{ required: true, message: 'Vui lòng chọn thương hiệu!' }]}
+              >
+                <Select
+                  size="large"
+                  disabled
+                  className="w-full rounded-lg"
+                >
+                  {brands.map(brand => (
+                    <Option key={brand} value={brand}>{brand}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              {/* Specifications */}
               {['dienthoai', 'laptop', 'tablet'].includes(selectedCategory) && (
                 <>
-                  <Col span={12}>
-                    <Form.Item
-                      label='Bộ nhớ lưu trữ thiết bị'
-                      name='storage'
-                      labelCol={{ span: 24 }}
-                      rules={[{ required: true, message: 'Bộ nhớ lưu trữ không để trống!' }]}
+                  <Form.Item
+                    name="storage"
+                    label="Bộ nhớ trong"
+                    rules={[{ required: true, message: 'Vui lòng chọn bộ nhớ trong!' }]}
+                  >
+                    <Select
+                      size="large"
+                      className="w-full rounded-lg"
+                      disabled
                     >
-                      <Select
-                        style={{ width: '100%' }}
-                        size='large'
-                        placeholder='Lựa chọn'
-                        allowClear
-                        showSearch
-                        optionFilterProp='children'
-                        disabled
-                      >
-                        <Select.Option value='16GB'>16GB</Select.Option>
-                        <Select.Option value='32GB'>32GB</Select.Option>
-                        <Select.Option value='128GB'>128GB</Select.Option>
-                        <Select.Option value='256GB'>256GB</Select.Option>
-                        <Select.Option value='512GB'>512GB</Select.Option>
-                        <Select.Option value='1TB'>1TB</Select.Option>
-                        <Select.Option value='2TB'>2TB</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      label='Ram thiết bị'
-                      name='ram'
-                      labelCol={{ span: 24 }}
-                      rules={[{ required: true, message: 'Ram thiết bị không để trống!' }]}
+                      {['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB'].map(storage => (
+                        <Option key={storage} value={storage}>{storage}</Option>))}
+                    </Select>
+                  </Form.Item>
+
+                  <Form.Item
+                    name="ram"
+                    label="RAM"
+                    rules={[{ required: true, message: 'Vui lòng chọn RAM!' }]}
+                  >
+                    <Select
+                      size="large"
+                      className="w-full rounded-lg"
+                      disabled
                     >
-                      <Select
-                        style={{ width: '100%' }}
-                        size='large'
-                        placeholder='Lựa chọn'
-                        disabled
-                        allowClear
-                        showSearch
-                        optionFilterProp='children'
-                      >
-                        <Select.Option value='4GB'>4GB</Select.Option>
-                        <Select.Option value='6GB'>6GB</Select.Option>
-                        <Select.Option value='8GB'>8GB</Select.Option>
-                        <Select.Option value='12GB'>12GB</Select.Option>
-                        <Select.Option value='16GB'>16GB</Select.Option>
-                        <Select.Option value='24GB'>24GB</Select.Option>
-                        <Select.Option value='32GB'>32GB</Select.Option>
-                        <Select.Option value='64GB'>64GB</Select.Option>
-                        <Select.Option value='128GB'>128GB</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>{' '}
-                  <Col span={24}>
-                    <Form.Item
-                      label='Chipset'
-                      name='cpu'
-                      labelCol={{ span: 24 }}
-                      rules={[{ required: true, message: 'Chipset sản phẩm không để trống!' }]}
-                    >
-                      <Input style={{ width: '100%' }} size='large' disabled />
-                    </Form.Item>
-                  </Col>
+                      {['4GB', '8GB', '16GB', '32GB', '64GB'].map(ram => (
+                        <Option key={ram} value={ram}>{ram}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+
+                  <Form.Item
+                    name="cpu"
+                    label="Chipset"
+                    rules={[{ required: true, message: 'Vui lòng nhập chipset!' }]}
+                  >
+                    <Input size="large" disabled className="rounded-lg" />
+                  </Form.Item>
                 </>
               )}
 
-              <Col span={12}>
-                <Form.Item
-                  label='Dung lượng pin sản phẩm (mah, cell, kwh)'
-                  name='battery'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Dung lượng pin thiết bị không để trống!' }]}
-                >
-                  <Input style={{ width: '100%' }} size='large' disabled />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label='Hệ điều hành'
-                  name='operatingSystem'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Hệ điều hành không để trống!' }]}
-                >
-                  <Select
-                    style={{ width: '100%' }}
-                    size='large'
-                    placeholder='Lựa chọn'
-                    allowClear
-                    showSearch
-                    optionFilterProp='children'
-                    disabled
-                  >
-                    <Select.Option value='Windows'>Windows</Select.Option>
-                    <Select.Option value='Mac OS'>Mac OS</Select.Option>
-                    <Select.Option value='Linux'>Linux</Select.Option>
-                    <Select.Option value='Android'>Android</Select.Option>
-                    <Select.Option value='iOS'>iOS</Select.Option>
-                    <Select.Option value='Chrome OS'>Chrome OS</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label='Độ phân giải màn hình'
-                  name='screenReslution'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Hệ điều hành không để trống!' }]}
-                >
-                  <Select
-                    style={{ width: '100%' }}
-                    size='large'
-                    placeholder='Lựa chọn'
-                    allowClear
-                    showSearch
-                    optionFilterProp='children'
-                    disabled
-                  >
-                    <Select.Option value='HD (1280x720)'>HD (1280x720)</Select.Option>
-                    <Select.Option value='Full HD (1920x1080)'>Full HD (1920x1080)</Select.Option>
-                    <Select.Option value='WUXGA (1920x1200)'>WUXGA (1920x1200)</Select.Option>
-                    <Select.Option value='UWHD (2560x1080)'>UWHD (2560x1080)</Select.Option>
-                    <Select.Option value='2K QHD (2560x1440)'>2K QHD (2560x1440)</Select.Option>
-                    <Select.Option value='WQHD (3440x1440)'>WQHD (3440x1440)</Select.Option>
-                    <Select.Option value='4K (3840x2160)'>4K (3840x2160)</Select.Option>
-                    <Select.Option value='Apple XDR (6016 x 3384)'>Apple XDR (6016 x 3384)</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label='Kích thước màn hình (inches)'
-                  name='screenSize'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Kích thước màn hình thiết bị không để trống!' }]}
-                >
-                  <Input style={{ width: '100%' }} size='large' disabled />
-                </Form.Item>
-              </Col>
+              {/* Other Specifications */}
+              <Form.Item
+                name="battery"
+                label="Dung lượng pin"
+                rules={[{ required: true, message: 'Vui lòng nhập dung lượng pin!' }]}
+              >
+                <Input size="large" disabled className="rounded-lg" />
+              </Form.Item>
 
-              <Col span={12}>
-                <Form.Item
-                  name='quantity'
-                  label='Số lượng'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Số lượng sản phẩm không để trống!' }]}
+              <Form.Item
+                name="operatingSystem"
+                label="Hệ điều hành"
+                rules={[{ required: true, message: 'Vui lòng chọn hệ điều hành!' }]}
+              >
+                <Select
+                  size="large"
+                  className="w-full rounded-lg"
+                  disabled
                 >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    size='large'
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => (value ? value.replace(/\$\s?|(,*)/g, '') : '')}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name='weight'
-                  label='Trọng lượng'
-                  labelCol={{ span: 24 }}
-                  rules={[{ required: true, message: 'Trọng lượng sản phẩm không để trống!' }]}
-                >
-                  <Input style={{ width: '100%' }} size='large' disabled />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item
-              name='description'
-              labelCol={{ span: 24 }}
-              label='Mô tả sản phẩm'
-              rules={[{ required: true, message: 'Mô tả sản phẩm không để trống!' }]}
-            >
-              <ReactQuill theme='snow' value={rawHTML} onChange={setRawHTML} id='content' />
-            </Form.Item>
+                  {['iOS', 'Android', 'Windows', 'macOS', 'Linux'].map(os => (
+                    <Option key={os} value={os}>{os}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
-            <Form.Item>
-              <Link to='/admin/products'>
-                <Button type='primary' htmlType='submit' style={{ marginRight: '20px' }}>
-                  Back
-                </Button>
+              <Form.Item
+                name="screenReslution"
+                label="Độ phân giải màn hình"
+                rules={[{ required: true, message: 'Vui lòng chọn độ phân giải!' }]}
+              >
+                <Select
+                  size="large"
+                  className="w-full rounded-lg"
+                  disabled
+                >
+                  {[
+                    'HD (1280x720)',
+                    'Full HD (1920x1080)',
+                    '2K (2560x1440)',
+                    '4K (3840x2160)'
+                  ].map(resolution => (
+                    <Option key={resolution} value={resolution}>{resolution}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                name="screenSize"
+                label="Kích thước màn hình"
+                rules={[{ required: true, message: 'Vui lòng nhập kích thước màn hình!' }]}
+              >
+                <Input size="large" disabled className="rounded-lg" suffix="inch" />
+              </Form.Item>
+
+              <Form.Item
+                name="weight"
+                label="Trọng lượng"
+                rules={[{ required: true, message: 'Vui lòng nhập trọng lượng!' }]}
+              >
+                <Input size="large" disabled className="rounded-lg" suffix="g" />
+              </Form.Item>
+
+              <Form.Item
+                name="quantity"
+                label="Số lượng"
+                rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}
+              >
+                <InputNumber
+                  className="w-full rounded-lg"
+                  size="large"
+                  min={0}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                />
+              </Form.Item>
+
+              {/* Description */}
+              <div className="md:col-span-2">
+                <Form.Item
+                  name="description"
+                  label="Mô tả sản phẩm"
+                  rules={[{ required: true, message: 'Vui lòng nhập mô tả sản phẩm!' }]}
+                >
+                  <div className="border rounded-lg">
+                    <ReactQuill
+                      theme="snow"
+                      value={rawHTML}
+                      onChange={setRawHTML}
+                      className="min-h-[200px]"
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                          ['link', 'image'],
+                          ['clean']
+                        ]
+                      }}
+                    />
+                  </div>
+                </Form.Item>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-4 mt-8 pt-4 border-t">
+              <Link
+                to="/admin/products"
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Hủy
               </Link>
-              <Button type='primary' htmlType='submit'>
-                Thêm mới
-              </Button>
-            </Form.Item>
-          </Col>
-        </Row>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px - 6 py - 2 bg - blue - 600 text - white rounded - lg transition - colors flex items - center ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'hover:bg-blue-700'
+                  }`}
+              >
+                {isSubmitting && <LoadingOutlined className="mr-2" />}
+                {isSubmitting ? 'Đang cập nhật...' : 'Cập nhật'}
+              </button>
+            </div>
+          </div>
+        </div>
       </Form>
-    </>
-  )
+    </div>
+  );
 }
 
-const Breadcrumb = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin: 20px 0;
-  text-transform: uppercase;
-`
-const UploadWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  background-color: #fafafa;
-  justify-content: center;
-  min-height: 300px;
-  border: 1px solid gray;
-  margin-bottom: 10px;
-`
+export default EditPro;
 
-export default EditPro

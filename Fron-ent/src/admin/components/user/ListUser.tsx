@@ -1,141 +1,196 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Image, message, Modal, Space, Table, Typography } from 'antd'
-import { ColumnsType } from 'antd/es/table'
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import styled from 'styled-components'
-import { deleteUser, listUser } from '../../../api/user'
-import { UserType } from '../../../type/user'
+import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { Button, Table, Modal, message, Typography, Tag, Badge, Avatar } from 'antd';
+import { UserOutlined, EditOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { listUser, deleteUser } from '../../../api/user';
+import { UserType } from '../../../type/user';
 
-const ListUser = () => {
-  const [user, setUser] = useState<UserType[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
-  const handlePageChange = (page: number, pageSize?: number) => {
-    setCurrentPage(page)
-    setPageSize(pageSize || 5)
-  }
-  const data = user?.map((item, index) => {
-    return {
-      key: index + 1,
-      id: item.id,
-      name: item.name,
-      username: item.username,
-      email: item.email,
-      password: item.password,
-      phone: item.phone,
-      address: item.address,
-      roleId: item.roleId,
-      birthday: item.birthday,
-      createdAt: item.createdAt,
-      updateAt: item.updateAt,
-      isEnabled: item.isEnabled
+interface TableParams {
+  pagination: {
+    current: number;
+    pageSize: number;
+    total: number;
+  };
+}
+
+const UserList: React.FC = () => {
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [tableParams, setTableParams] = useState<TableParams>({
+    pagination: {
+      current: 1,
+      pageSize: 10,
+      total: 0,
+    },
+  });
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data } = await listUser();
+      setUsers(data?.data || []);
+      setTableParams(prev => ({
+        ...prev,
+        pagination: {
+          ...prev.pagination,
+          total: data?.data?.length || 0,
+        },
+      }));
+    } catch (error) {
+      message.error('Không thể tải danh sách người dùng');
+    } finally {
+      setLoading(false);
     }
-  })
-  const startIndex = (currentPage - 1) * pageSize
-  const endIndex = Math.min(startIndex + pageSize, data?.length)
-  const currentData = data?.slice(startIndex, endIndex)
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleDelete = (id: number) => {
+    Modal.confirm({
+      title: 'Xác nhận xóa người dùng',
+      content: 'Bạn có chắc chắn muốn xóa người dùng này?',
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await deleteUser(id);
+          message.success('Xóa người dùng thành công');
+          fetchUsers();
+        } catch (error) {
+          message.error('Không thể xóa người dùng');
+        }
+      },
+    });
+  };
 
   const columns: ColumnsType<UserType> = [
     {
-      title: 'ID',
-      dataIndex: 'key',
-      key: 'id'
+      title: '#',
+      dataIndex: 'id',
+      width: 60,
+      align: 'center',
+      render: (_, __, index) => (
+        <span className="text-gray-500">
+          {(tableParams.pagination.current - 1) * tableParams.pagination.pageSize + index + 1}
+        </span>
+      ),
     },
     {
-      title: 'Tên khách hàng',
+      title: 'Thông tin người dùng',
       dataIndex: 'name',
-      key: 'name',
-      render: (text) => <p style={{ width: '200px' }}>{text}</p>
+      render: (_, record) => (
+        <div className="flex items-center space-x-3">
+          <Avatar
+            size={40}
+            icon={<UserOutlined />}
+            className="bg-blue-100 text-blue-600"
+          />
+          <div>
+            <div className="font-medium text-gray-900">{record.name}</div>
+            <div className="text-sm text-gray-500">{record.username}</div>
+          </div>
+        </div>
+      ),
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email'
+      title: 'Liên hệ',
+      dataIndex: 'contact',
+      render: (_, record) => (
+        <div className="space-y-1">
+          <div className="flex items-center text-gray-500">
+            <MailOutlined className="mr-2" />
+            {record.email}
+          </div>
+          {record.phone && (
+            <div className="flex items-center text-gray-500">
+              <PhoneOutlined className="mr-2" />
+              {record.phone}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
-      title: 'Chức vụ',
+      title: 'Vai trò',
       dataIndex: 'roleId',
-      key: 'roleId',
-      render: (text) => <p style={{ width: '200px' }}>{text == 2 ? 'Nhân viên' : 'Khách hàng'}</p>
+      width: 120,
+      render: (roleId) => (
+        <Tag color={roleId === 2 ? 'blue' : 'green'}>
+          {roleId === 2 ? 'Nhân viên' : 'Khách hàng'}
+        </Tag>
+      ),
     },
     {
-      title: 'Trạng thái tài khảon',
+      title: 'Trạng thái',
       dataIndex: 'isEnabled',
-      key: 'isEnabled',
-      render: (text) => <p style={{ width: '200px' }}>{text == 1 ? 'Hoạt động' : 'Khóa'}</p>
+      width: 120,
+      align: 'center',
+      render: (status) => (
+        <Badge
+          status={status === 1 ? 'success' : 'error'}
+          text={
+            <span className={status === 1 ? 'text-green-600' : 'text-red-600'}>
+              {status === 1 ? 'Hoạt động' : 'Đã khóa'}
+            </span>
+          }
+        />
+      ),
     },
     {
-      title: 'Action',
-      key: 'action',
-      render: (record: UserType) => (
-        <Space size='middle'>
+      title: 'Thao tác',
+      width: 100,
+      align: 'center',
+      render: (_, record) => (
+        <div className="flex items-center justify-center space-x-2">
           <Link to={`${record.id}/edit`}>
-            <button style={{ border: '0px', fontSize: '20px' }} onClick={() => console.log(`${record.id}`)}>
-              {' '}
+            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
               <EditOutlined />
             </button>
-          </Link>
-        </Space>
-      )
-    }
-  ]
+          </Link >
+        </div >
+      ),
+    },
+  ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await listUser()
-        setUser(data?.data)
-      } catch (err) {
-        console.log(err)
-      }
-    }
-    fetchData()
-  }, [])
-
-  const onDelete = async (id: number) => {
-    Modal.confirm({
-      title: 'Bạn có muốn xóa không?',
-      onOk: async () => {
-        const { data } = await deleteUser(id)
-        if (data) {
-          setUser(user.filter((item) => item.id !== id))
-        }
-        message.success('Xóa thành công')
-      }
-    })
-  }
   return (
-    <>
-      <Breadcrumb>
-        <Typography.Title level={2} style={{ margin: 0 }}>
-          Danh sách tài khoản
-        </Typography.Title>
-        {/* <Link to='/admin/user/add'>
-          <Button type='dashed' shape='circle' icon={<PlusOutlined />} />
-        </Link> */}
-      </Breadcrumb>
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={{
-          total: data.length,
-          current: currentPage,
-          pageSize: pageSize,
-          onChange: handlePageChange,
-          showSizeChanger: true,
-          pageSizeOptions: ['5', '10', '20']
-        }}
-      />
-    </>
-  )
-}
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center">
+        <div>
+          <Typography.Title level={2} className="!mb-0">
+            Danh sách người dùng
+          </Typography.Title>
+          <p className="text-gray-500 mt-1">
+            Quản lý thông tin và trạng thái người dùng
+          </p>
+        </div>
 
-const Breadcrumb = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-  text-transform: uppercase;
-`
+        <div className="flex items-center space-x-3">
+          <Button
+            type="primary"
+            href="/admin/user/add"
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Thêm thành viên
+          </Button>
+        </div>
+      </div>
+      <div className="bg-white rounded-lg shadow">
+        <Table
+          columns={columns}
+          dataSource={users}
+          loading={loading}
+          pagination={tableParams.pagination}
+          onChange={(pagination) => setTableParams({ pagination: pagination as TableParams['pagination'] })}
+          rowKey="id"
+          scroll={{ x: 1000 }}
+        />
+      </div>
+    </div>
+  );
+};
 
-export default ListUser
+export default UserList;

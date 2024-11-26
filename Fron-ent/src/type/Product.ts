@@ -20,3 +20,11 @@ export type ProductType = {
   status: number,
   productView: number
 }
+export interface Product {
+  id: string;
+  name: string;
+  thumbnail: string;
+  price: number;
+  salePrice: number;
+  type: string;
+}

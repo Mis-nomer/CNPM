@@ -1,14 +1,51 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { message } from 'antd'
 import { getAll, listOnePro } from '@/api/products'
-import { ProductType } from '@/type/Product'
 import { addCartService } from '@/api/carts'
-import { IAddCart } from '@/type/cart'
-import { Minus, Plus } from 'lucide-react'
+import { ChevronRight, Home, Minus, Plus, ShoppingCart, Star } from 'lucide-react'
 import numeral from 'numeral'
+import { useCart } from '../../../context/CartContext'
 
-const typeDisplayNames: { [key: string]: string } = {
+// Types
+interface ProductType {
+  id: number
+  name: string
+  price: number
+  salePrice: number
+  image: string
+  thumbnail: string
+  type: string
+  quantity: number
+  description: string
+  screenSize?: string
+  screenReslution?: string
+  cpu?: string
+  ram?: string
+  storage?: string
+  battery?: string
+  operatingSystem?: string
+  weight?: string
+}
+
+interface UserInfo {
+  id: number
+  email: string
+  username: string
+}
+
+interface IAddCart {
+  productId: number
+  quantity: number
+  userId: number
+}
+
+interface ProductCardProps {
+  item: ProductType
+  onClick?: () => void
+}
+
+const typeDisplayNames: Record<string, string> = {
   dienthoai: 'Điện thoại',
   laptop: 'Laptop',
   tablet: 'Máy tính bảng',
@@ -20,277 +57,401 @@ const typeDisplayNames: { [key: string]: string } = {
   tivi: 'Tivi',
   hangcu: 'Hàng cũ'
 }
-const ProductDetail = () => {
-  const userInfoString = localStorage.getItem('userInfo')
-  const userInfo = userInfoString ? JSON.parse(userInfoString) : null
-  const { id } = useParams()
-  const [pro, setPro] = useState<ProductType>()
-  const [similarpr, setSimilarpr] = useState<ProductType[]>([])
-  const [quantityValue, setQuantityValue] = useState<number>(1)
 
-  const handleIncrease = () => {
-    setQuantityValue((prevValue) => prevValue + 1)
-  }
+// Components
+const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
+  const navigate = useNavigate()
+  const handleClick = useCallback(() => {
+    navigate(`/products/${item.id}`)
+    window.scrollTo(0, 0)
+  }, [item.id, navigate])
 
-  const handleDecrease = () => {
-    setQuantityValue((prevValue) => (prevValue > 1 ? prevValue - 1 : 1)) // Đảm bảo số lượng không nhỏ hơn 1
-  }
+  return (
+    <div
+      onClick={handleClick}
+      className="cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+    >
+      <div className="aspect-square relative overflow-hidden">
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+      <div className="p-4">
+        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 min-h-[40px]">
+          {item.name}
+        </h3>
+        <div className="mt-2 space-y-1">
+          <div className="text-lg font-bold text-red-600">
+            {item.salePrice.toLocaleString('vi-VN', {
+              style: 'currency',
+              currency: 'VND'
+            })}
+          </div>
+          <div className="text-sm text-gray-500 line-through">
+            {item.price.toLocaleString('vi-VN', {
+              style: 'currency',
+              currency: 'VND'
+            })}
+          </div>
+        </div>
+        <div className="mt-2">
+          <div className="flex items-center text-yellow-400">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} size={16} fill="currentColor" />
+            ))}
+            <span className="ml-2 text-sm text-gray-500">7 đánh giá</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-  useEffect(() => {
-    const getProduct = async () => {
-      const { data } = await listOnePro(Number(id))
-      setPro(data?.data as ProductType)
-      if (data?.data && data?.data?.type) {
-        const { data } = await getAll()
-        setSimilarpr(data?.data)
+const LoadingSpinner: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-red-600" />
+  </div>
+)
+
+const ErrorState: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <h2 className="text-2xl font-bold text-gray-900">Không tìm thấy sản phẩm</h2>
+      <Link to="/" className="mt-4 inline-block text-red-600 hover:text-red-700">
+        Quay về trang chủ
+      </Link>
+    </div>
+  </div>
+)
+
+const ProductDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>()
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [product, setProduct] = useState<ProductType | null>(null)
+  const [similarProducts, setSimilarProducts] = useState<ProductType[]>([])
+  const [quantity, setQuantity] = useState<number>(1)
+  const [addingToCart, setAddingToCart] = useState<boolean>(false)
+  const { updateCartCount } = useCart();
+
+
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null') as UserInfo | null
+
+  const handleQuantityChange = useCallback((type: 'increase' | 'decrease') => {
+    setQuantity(prev => {
+      if (type === 'increase' && product) {
+        return Math.min(prev + 1, product.quantity)
       }
+      if (type === 'decrease') {
+        return Math.max(prev - 1, 1)
+      }
+      return prev
+    })
+  }, [product])
+
+  const fetchProductData = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data: productResponse } = await listOnePro(Number(id))
+
+      if (!productResponse?.data) {
+        throw new Error('Product not found')
+      }
+
+      setProduct(productResponse.data)
+
+      if (productResponse.data.type) {
+        const { data: allProductsResponse } = await getAll()
+        const filteredProducts = allProductsResponse.data
+          .filter((item: ProductType) =>
+            item.type === productResponse.data.type &&
+            item.id !== productResponse.data.id
+          )
+          .slice(0, 5)
+        setSimilarProducts(filteredProducts)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      message.error('Không thể tải thông tin sản phẩm')
+    } finally {
+      setLoading(false)
     }
-    getProduct()
   }, [id])
 
-  const addToCart = async (item: ProductType) => {
-    if (!userInfo) {
-      message.error('Bạn cần đăng nhập để thêm vào giỏ hàng')
-      return
+  useEffect(() => {
+    fetchProductData()
+  }, [fetchProductData])
+
+  const addToCart = async (product: ProductType) => {
+    try {
+      if (!userInfo) {
+        message.error('Bạn cần đăng nhập để thêm vào giỏ hàng')
+        return
+      }
+
+      if (quantity > product.quantity) {
+        message.error('Số lượng vượt quá hàng có sẵn')
+        return
+      }
+
+      setAddingToCart(true)
+
+      const cartData: IAddCart = {
+        productId: product.id,
+        quantity,
+        userId: userInfo.id
+      }
+
+      await addCartService(cartData)
+      updateCartCount();
+      message.success('Thêm vào giỏ hàng thành công')
+    } catch (err) {
+      message.error('Không thể thêm vào giỏ hàng')
+    } finally {
+      setAddingToCart(false)
     }
-    const data: IAddCart = {
-      productId: Number(item.id),
-      quantity: quantityValue,
-      userId: userInfo.id || 0
-    }
-    await addCartService(data)
-    message.success('Thêm vào giỏ hàng thành công')
   }
+
+  if (loading) return <LoadingSpinner />
+  if (error || !product) return <ErrorState />
+
+  const specifications = [
+    { label: 'Kích thước màn hình', value: product.screenSize },
+    { label: 'Độ phân giải', value: product.screenReslution },
+    { label: 'Chipset', value: product.cpu },
+    { label: 'RAM', value: product.ram },
+    { label: 'Bộ nhớ trong', value: product.storage },
+    { label: 'Pin', value: product.battery },
+    { label: 'Hệ điều hành', value: product.operatingSystem },
+    { label: 'Trọng lượng', value: product.weight }
+  ]
+
   return (
-    <div>
-      <main className='my-[20px]'>
-        <div className='w-[1080px] py-[10px] mx-auto flex border-b-2 border-[#f2f2f2]'>
-          <div className='text-black'>
-            <i className='fa-solid fa-house text-red-600 mr-[10px]'></i>
-            <Link to='/' className='text-black hover:text-black font-semibold'>
-              Trang chủ
+    <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb */}
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center space-x-2 text-sm">
+            <Link to="/" className="flex items-center text-gray-600 hover:text-red-600 transition-colors">
+              <Home className="w-4 h-4 mr-1" />
+              <span>Trang chủ</span>
             </Link>
-          </div>
-          <div className='mx-2 text-[#5d5f6c]'>
-            <i className='fa fa-angle-right' aria-hidden='true' />
-          </div>
-          <div className='text-black font-semibold'>
-            <Link to={`/product/${pro?.type}`} className='text-black hover:text-black font-semibold'>
-              {typeDisplayNames[String(pro?.type)]}
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <Link
+              to={`/product/${product.type}`}
+              className="text-gray-600 hover:text-red-600 transition-colors"
+            >
+              {typeDisplayNames[product.type]}
             </Link>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <span className="font-medium text-gray-900 line-clamp-1">
+              {product.name}
+            </span>
           </div>
-          <div className='mx-2 text-[#5d5f6c]'>
-            <i className='fa fa-angle-right' aria-hidden='true' />
-          </div>
-          <div className='text-black font-semibold'>{pro?.name}</div>
         </div>
-        <div className='w-[1440px] h-auto mx-auto'>
-          <div className='w-[1080px] h-auto mx-auto'>
-            <div className='w-[1080px] py-[5px] flex border-b-2 border-[#f2f2f2]'>
-              <div className='text-[24px] font-semibold w-[980px]'>{pro?.name}</div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Product Info */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Product Image */}
+            <div className="aspect-square relative rounded-lg overflow-hidden bg-white border">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+              />
             </div>
-            <div className='w-[1080px] h-auto flex justify-between mt-[20px]'>
-              <div className='w-[398px] h-[398px] mx-auto border flex justify-center item-center'>
-                <div>
-                  <img src={pro?.image} alt='' className='w-[358px] h-[358px] my-[20px]' />
-                </div>
-              </div>
-              <div className='w-[460px]'>
-                <div className='flex mb-[20px]'>
-                  <span className='text-[red] font-semibold text-[24px] mr-5'>
-                    {pro?.salePrice.toLocaleString('vi-VN', {
-                      style: 'currency',
-                      currency: 'VND'
-                    })}
-                  </span>
-                  <span className='text-[gray] font-semibold text-[18px] line-through mr-5'>
-                    {pro?.price.toLocaleString('vi-VN', {
-                      style: 'currency',
-                      currency: 'VND'
-                    })}
-                  </span>
-                </div>
-                <div className='flex items-center'>
-                  <div className='text-[#1e1e27] mt-1'>Số lượng:</div>
-                  <div className='mx-3 border h-[40px] w-[120px] flex items-center justify-around'>
-                    <button onClick={handleDecrease} className='p-1'>
-                      <Minus size={16} />
-                    </button>
-                    <span className='w-10 text-center '>{quantityValue}</span>
-                    <button onClick={handleIncrease} className='p-1'>
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </div>
-                <div className='my-5'>
-                  <p>
-                    Số lượng hàng còn trong kho:{' '}
-                    {numeral(pro?.quantity).format('0,0').replace(/,/g, '.').replace(/\./, ',')}
-                  </p>
-                </div>
-                <div className='mt-7'>
-                  {pro?.quantity === 0 ? (
-                    <p className='text-red-500'>Sản phẩm đã hết hàng</p>
-                  ) : (
-                    <button
-                      className='bg-red-500 h-10 w-44 rounded-sm text-white'
-                      onClick={() => {
-                        addToCart(pro as ProductType)
-                      }}
-                    >
-                      <i className='fa-solid fa-cart-plus'></i> Thêm vào giỏ hàng
-                    </button>
-                  )}
-                </div>
-                <div className='text-[#51545f] my-[20px] w-[460px]'>
-                  <div className='mb-[0.9375rem] p-2.5 rounded-[20px] border border-gray-300 w-[400px] text-gray-700'>
-                    <span className='block text-sm font-bold text-gray-800 mb-2'>Chính sách mua hàng:</span>
-                    <ul className='m-0 pl-6 text-sm list-none'>
-                      <li className='flex mb-2.5'>
-                        <i className='fas fa-check-circle text-green-600 mr-2 mt-1'></i>
-                        <span className='text-gray-500'>
-                          Máy mới 100% , chính hãng. Hoàn tiền 300% nếu phát hiện hàng giả
-                        </span>
-                      </li>
-                      <li className='flex mb-2.5'>
-                        <i className='fas fa-check-circle text-green-600 mr-2 mt-1'></i>
-                        <span className='text-gray-500'>Hộp, Sách hướng dẫn, Cây lấy sim, Cáp sạc</span>
-                      </li>
-                      <li className='flex mb-2.5'>
-                        <i className='fas fa-check-circle text-green-600 mr-2 mt-1'></i>
-                        <span className='text-gray-500'>
-                          1 ĐỔI 1 trong 30 ngày nếu có lỗi phần cứng nhà sản xuất. Bảo hành 12 tháng tại trung tâm bảo
-                          hành chính hãng
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className='w-[1080px] h-auto mx-auto '>
-            <div className='py-20'>
-              <div className='container mx-auto'>
-                <div className='flex justify-between items-start'>
-                  <div className='w-8/12 p-3 rounded-2xl shadow'>
-                    <h2 className='text-xl font-bold mb-4'>Đặc điểm nổi bật</h2>
-                    <div className='ck-content' dangerouslySetInnerHTML={{ __html: pro?.description as string }}></div>
-                  </div>
-                  <div className='w-4/12 p-3 rounded-2xl shadow-md'>
-                    <h2 className='text-xl font-bold mb-4'>Thông số kỹ thuật</h2>
-                    <ul className='space-y-2'>
-                      <li className='flex justify-between'>
-                        <p>Kích thước màn hình</p>
-                        <div>{pro?.screenSize}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Độ phân giải màn hình</p>
-                        <div>{pro?.screenReslution}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Chipset</p>
-                        <div>{pro?.cpu}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Dung lượng RAM</p>
-                        <div>{pro?.ram}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Bộ nhớ trong</p>
-                        <div>{pro?.storage}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Pin</p>
-                        <div>{pro?.battery}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Hệ điều hành</p>
-                        <div>{pro?.operatingSystem}</div>
-                      </li>
-                      <li className='flex justify-between'>
-                        <p>Trọng lượng</p>
-                        <div>{pro?.weight}</div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className='w-[1080px] h-auto mx-auto'>
-            <div className='text-[#5d5f6c] text-2xl font-medium mt-14 uppercase border-b-2 border-[#f2f2f2]'>
-              Sản phẩm liên quan
-            </div>
-            <div className='w-[1080px] my-[20px]'>
-              <div className='product-list'>
-                {similarpr
-                  .filter((item) => item.type === pro?.type)
-                  .filter((item) => item.id !== pro?.id)
-                  .map((item, index) => {
-                    return (
-                      <div className='product' key={index}>
-                        <Link to={`/products/${item.id}`} className='product'>
-                          <div className='product-img'>
-                            <img src={item.image} alt='' className='img-product' />
-                          </div>
-                          <h3 className='product-name'>{item.name}</h3>
-                          <div className='product-price'>
-                            <span className='salePrice'>
-                              {item?.salePrice.toLocaleString('vi-VN', {
-                                style: 'currency',
-                                currency: 'VND'
-                              })}
-                            </span>
-                            <span className='costPrice'>
-                              {item?.price.toLocaleString('vi-VN', {
-                                style: 'currency',
-                                currency: 'VND'
-                              })}
-                            </span>
-                          </div>
-                          <div className='product-desc'>
-                            <div className='promotion'>
-                              <p>[HOT] Thu cũ lên đời giá cao - Thủ tục nhanh - Trợ giá lên tới 1.000.000đ</p>
-                            </div>
-                          </div>
-                          <div className='product-sao'>
-                            <div data-v-78fbd3bf className='icon-star'>
-                              <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                                <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                              </svg>
-                            </div>
-                            <div data-v-78fbd3bf className='icon-star'>
-                              <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                                <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                              </svg>
-                            </div>
-                            <div data-v-78fbd3bf className='icon-star'>
-                              <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                                <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                              </svg>
-                            </div>
-                            <div data-v-78fbd3bf className='icon-star'>
-                              <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                                <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                              </svg>
-                            </div>
-                            <div data-v-78fbd3bf className='icon-star'>
-                              <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                                <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                              </svg>
-                            </div>
-                            &nbsp; &nbsp;
-                            <span className='evaluate'>7 đánh giá</span>
-                          </div>
-                        </Link>
-                      </div>
-                    )
+
+            {/* Product Details */}
+            <div className="space-y-6">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {product.name}
+              </h1>
+
+              {/* Price */}
+              <div className="flex items-end gap-3">
+                <span className="text-3xl font-bold text-red-600">
+                  {product.salePrice.toLocaleString('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
                   })}
+                </span>
+                <span className="text-lg text-gray-500 line-through">
+                  {product.price.toLocaleString('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
+                  })}
+                </span>
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-700">Số lượng:</span>
+                <div className="flex items-center border rounded-lg">
+                  <button
+                    onClick={() => handleQuantityChange('decrease')}
+                    className="p-2 hover:bg-gray-100 transition-colors rounded-l-lg"
+                    disabled={quantity <= 1 || addingToCart}
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <span className="w-12 text-center font-medium">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => handleQuantityChange('increase')}
+                    className="p-2 hover:bg-gray-100 transition-colors rounded-r-lg"
+                    disabled={quantity >= product.quantity || addingToCart}
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+                <span className="text-sm text-gray-500">
+                  Còn {numeral(product.quantity).format('0,0')} sản phẩm
+                </span>
+              </div>
+
+              {product.quantity === 0 ? (
+                <div className="inline-block bg-gray-100 px-6 py-3 rounded-lg text-gray-500">
+                  Hết hàng
+                </div>
+              ) : (
+                <button
+                  onClick={() => addToCart(product)}
+                  disabled={addingToCart}
+                  className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-colors ${addingToCart
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                    }`}
+                >
+                  <ShoppingCart size={20} />
+                  {addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
+                </button>
+              )}
+
+              {/* Policy Box */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-gray-900">
+                  Chính sách mua hàng
+                </h3>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
+                      <i className="fas fa-check text-green-600 text-xs" />
+                    </div>
+                    <span>
+                      Máy mới 100%, chính hãng. Hoàn tiền 300% nếu phát hiện hàng giả
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
+                      <i className="fas fa-check text-green-600 text-xs" />
+                    </div>
+                    <span>
+                      Bảo hành 12 tháng chính hãng
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
+                      <i className="fas fa-check text-green-600 text-xs" />
+                    </div>
+                    <span>
+                      Hỗ trợ đổi mới trong 30 ngày
+                    </span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Specifications and Description */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {/* Description */}
+          <div className="md:col-span-2 bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">
+              Đặc điểm nổi bật
+            </h2>
+            <div
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
+          </div>
+
+          {/* Specifications */}
+          <div className="bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">
+              Thông số kỹ thuật
+            </h2>
+            <dl className="space-y-3">
+              {specifications
+                .filter(spec => spec.value) // Only show specs that have values
+                .map((spec) => (
+                  <div
+                    key={spec.label}
+                    className="grid grid-cols-2 py-2 border-b border-gray-100 last:border-0"
+                  >
+                    <dt className="text-gray-600">{spec.label}</dt>
+                    <dd className="text-gray-900 font-medium">{spec.value}</dd>
+                  </div>
+                ))}
+            </dl>
+          </div>
+        </div>
+
+        {/* Similar Products */}
+        {similarProducts.length > 0 && (
+          <section className="bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              Sản phẩm tương tự
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {similarProducts.map((item) => (
+                <ProductCard
+                  key={item.id}
+                  item={item}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Reviews Section - You can implement this later */}
+        <section className="mt-8 bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">
+            Đánh giá sản phẩm
+          </h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="text-4xl font-bold text-gray-900">4.8</div>
+              <div className="flex flex-col">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} fill="currentColor" />
+                  ))}
+                </div>
+                <div className="text-sm text-gray-500">7 đánh giá</div>
+              </div>
+            </div>
+
+            {userInfo && (
+              <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                Viết đánh giá
+              </button>
+            )}
+          </div>
+
+          {/* Placeholder for review list */}
+          <div className="mt-6 text-center text-gray-500">
+            Chưa có đánh giá nào cho sản phẩm này
+          </div>
+        </section>
       </main>
     </div>
   )

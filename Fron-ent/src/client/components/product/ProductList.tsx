@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { ProductType } from '../../../type/Product'
-import { getAllProByType } from '@/api/products'
+import { getAllProByType } from '@/api/products';
+import { ChevronRightIcon, HomeIcon, StarIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { ProductType } from '../../../type/Product';
 
 const typeDisplayNames: { [key: string]: string } = {
   dienthoai: 'Điện thoại',
@@ -19,102 +20,79 @@ const typeDisplayNames: { [key: string]: string } = {
 const ProductList = () => {
   const { type } = useParams()
   const [products, setProducts] = useState<ProductType[]>([])
-  console.log(type)
 
   useEffect(() => {
     const getData = async (type: String) => {
       const { data } = await getAllProByType(type)
-      console.log(data?.data)
       setProducts(data?.data)
     }
     getData(String(type))
-  }, [String(type)])
+  }, [type])
 
   return (
-    <div>
-      <main className='my-[20px]'>
-        <div className='w-[1080px] py-[10px] mx-auto flex border-b-2 border-[#f2f2f2]'>
-          <div className='text-black'>
-            <i className='fa-solid fa-house text-red-600 mr-[10px]'></i>
-            <Link to='/' className='text-black hover:text-black font-semibold'>
-              Trang chủ
+    <div className="bg-gray-50 min-h-screen">
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center space-x-2 text-sm">
+            <Link to="/" className="flex items-center text-gray-600 hover:text-red-600 transition-colors">
+              <HomeIcon className="w-4 h-4 mr-1" />
+              <span>Trang chủ</span>
             </Link>
-          </div>
-          <div className='mx-2 text-[#5d5f6c]'>
-            <i className='fa fa-angle-right' aria-hidden='true' />
-          </div>
-          <div className='text-black font-semibold'>{typeDisplayNames[String(type)]}</div>
-        </div>
-
-        <div className='w-[1200px] h-auto mx-auto'>
-          <div className='w-[1200px] my-[20px]'>
-            <div className='product-list'>
-              {products &&
-                products.map((item, index) => {
-                  return (
-                    <div className='product' key={index}>
-                      <Link to={`/products/${item.id}`} className='product'>
-                        <div className='product-img'>
-                          <img src={item?.thumbnail} alt='' className='img-product' />
-                        </div>
-                        <h3 className='product-name'>{item.name}</h3>
-                        <div className='product-price'>
-                          <span className='salePrice'>
-                            {item?.salePrice.toLocaleString('vi-VN', {
-                                style: 'currency',
-                                currency: 'VND',
-                              })}
-                          </span>
-                          <span className='costPrice'>
-                            {item?.price.toLocaleString('vi-VN', {
-                              style: 'currency',
-                              currency: 'VND'
-                            })}
-                          </span>
-                        </div>
-                        <div className='product-desc'>
-                          <div className='promotion'>
-                            <p>[HOT] Thu cũ lên đời giá cao - Thủ tục nhanh - Trợ giá lên tới 1.000.000đ</p>
-                          </div>
-                        </div>
-                        <div className='product-sao'>
-                          <div data-v-78fbd3bf className='icon-star'>
-                            <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                              <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                            </svg>
-                          </div>
-                          <div data-v-78fbd3bf className='icon-star'>
-                            <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                              <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                            </svg>
-                          </div>
-                          <div data-v-78fbd3bf className='icon-star'>
-                            <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                              <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                            </svg>
-                          </div>
-                          <div data-v-78fbd3bf className='icon-star'>
-                            <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                              <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                            </svg>
-                          </div>
-                          <div data-v-78fbd3bf className='icon-star'>
-                            <svg height={12} xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'>
-                              <path d='M381.2 150.3L524.9 171.5C536.8 173.2 546.8 181.6 550.6 193.1C554.4 204.7 551.3 217.3 542.7 225.9L438.5 328.1L463.1 474.7C465.1 486.7 460.2 498.9 450.2 506C440.3 513.1 427.2 514 416.5 508.3L288.1 439.8L159.8 508.3C149 514 135.9 513.1 126 506C116.1 498.9 111.1 486.7 113.2 474.7L137.8 328.1L33.58 225.9C24.97 217.3 21.91 204.7 25.69 193.1C29.46 181.6 39.43 173.2 51.42 171.5L195 150.3L259.4 17.97C264.7 6.954 275.9-.0391 288.1-.0391C300.4-.0391 311.6 6.954 316.9 17.97L381.2 150.3z'></path>
-                            </svg>
-                          </div>
-                          &nbsp; &nbsp;
-                          <span className='evaluate'>7 đánh giá</span>
-                        </div>
-                      </Link>
-                    </div>
-                  )
-                })}
-            </div>
+            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+            <span className="font-medium text-gray-900">{typeDisplayNames[String(type)]}</span>
           </div>
         </div>
-      </main>
-    </div>
+      </nav>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {products.map((item, index) => (
+            <Link
+              key={index}
+              to={`/products/${item.id}`}
+              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden group"
+            >
+              <div className="aspect-w-1 aspect-h-1 relative">
+                <img
+                  src={item.thumbnail}
+                  alt={item.name}
+                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-gray-900 line-clamp-2 min-h-[40px] mb-2">
+                  {item.name}
+                </h3>
+                <div className="space-y-1 mb-3">
+                  <div className="text-lg font-bold text-red-600">
+                    {item.salePrice.toLocaleString('vi-VN', {
+                      style: 'currency',
+                      currency: 'VND'
+                    })}
+                  </div>
+                  <div className="text-sm text-gray-500 line-through">
+                    {item.price.toLocaleString('vi-VN', {
+                      style: 'currency',
+                      currency: 'VND'
+                    })}
+                  </div>
+                </div>
+                <div className="bg-red-50 rounded-md p-2 mb-3">
+                  <p className="text-xs text-red-700 line-clamp-2">
+                    [HOT] Thu cũ lên đời giá cao - Thủ tục nhanh - Trợ giá lên tới 1.000.000đ
+                  </p>
+                </div>
+                <div className="flex items-center space-x-1">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                  <span className="ml-2 text-sm text-gray-500">7 đánh giá</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </main >
+    </div >
   )
 }
 
