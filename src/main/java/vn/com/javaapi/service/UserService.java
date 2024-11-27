@@ -9,4 +9,5 @@ public interface UserService {
     UserResponse getAllUser();
 
     void updateUser(UserDTO user);
+    void addUser(UserDTO user);
 }

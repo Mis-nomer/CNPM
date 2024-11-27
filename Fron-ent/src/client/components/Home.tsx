@@ -41,7 +41,6 @@ const Home = () => {
       try {
         const { data } = await getAll();
         setPro(data?.data);
-        console.log('Raw data:', data?.data);
       } catch (err) {
         console.log('Error:', err);
       }
@@ -52,12 +51,9 @@ const Home = () => {
   useEffect(() => {
     const filterProductsByType = () => {
       const categorizedProducts: { [key: string]: Product[] } = {};
-
       optionsByCategory.productTypes.forEach((type: string) => {
         categorizedProducts[type] = pro.filter((product) => product?.type === type);
       });
-
-      console.log('Filtered products:', categorizedProducts);
       setFilteredProducts(categorizedProducts);
     };
 
@@ -100,10 +96,18 @@ const Home = () => {
         <div className='banner'>
           <div className='banner-content'>
             <Carousel autoplay arrows>
-              <img src="https://file.hstatic.net/200000722513/file/uu_dai_soc_banner_web_slider_800x400.png" className=' w-full h-full object-cover' alt="" />
-              <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_rog800x400.jpg" className=' w-full h-full object-cover' alt="" />
-              <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_vivobook_s_gearvn__800x400_.jpg" className=' w-full h-full object-cover' alt="" />
-              <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_gearvn_800x400.jpg" className=' w-full h-full object-cover' alt="" />
+              <div>
+                <img src="https://file.hstatic.net/200000722513/file/uu_dai_soc_banner_web_slider_800x400.png" className=' w-full h-full object-cover' alt="" />
+              </div>
+              <div>
+                <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_rog800x400.jpg" className=' w-full h-full object-cover' alt="" />
+              </div>
+              <div>
+                <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_vivobook_s_gearvn__800x400_.jpg" className=' w-full h-full object-cover' alt="" />
+              </div>
+              <div>
+                <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_gearvn_800x400.jpg" className=' w-full h-full object-cover' alt="" />
+              </div>
             </Carousel>
             <div className='banner-title'>
               <div className='banner-outer-active'>

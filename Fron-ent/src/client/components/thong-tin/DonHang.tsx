@@ -1,14 +1,15 @@
 import { listAllOrderByUser, updateStatusOrder } from '@/api/orders'
 import { OrderTypeData } from '@/type/OrderType'
-import { Button, message, Modal, Space, Table } from 'antd'
-import { Eye, PencilLine } from 'lucide-react'
+import { Button, message, Modal, Table } from 'antd'
 import moment from 'moment'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const DonHang = () => {
   const [donHang, setDonHang] = useState<OrderTypeData[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderTypeData | null>(null)
+  console.log('selectedOrder', selectedOrder);
+
   const [isModalVisible, setIsModalVisible] = useState(false)
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
 

@@ -14,11 +14,8 @@ const Signin: React.FC = () => {
       if (data) {
         localStorage.setItem('token', JSON.stringify(data?.data?.token));
         localStorage.setItem('userInfo', JSON.stringify(data?.data?.user));
-        message.success('Đăng nhập tài khoản thành công, chuyển sang trang đăng nhập sau 2s');
-        setTimeout(() => {
-          navigate('/');
-          window.location.reload();
-        }, 2000);
+        message.success('Đăng nhập tài khoản thành công');
+        navigate('/');
       }
     } else {
       message.error(data?.message);

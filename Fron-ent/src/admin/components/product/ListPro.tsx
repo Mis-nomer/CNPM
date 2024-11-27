@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Image, Input, Modal, Select, Table, Typography, message } from 'antd'
-import { EditOutlined, PlusOutlined, ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, ExclamationCircleOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { getAll, remove } from '../../../api/products'
 import { ProductType } from '../../../type/Product'
@@ -19,7 +19,7 @@ const CATEGORY_TYPES = {
   pc_manhinh: 'PC-Màn hình',
   tivi: 'Tivi',
   hangcu: 'Hàng cũ'
-} as const
+}
 
 interface TableParams {
   pagination: {
@@ -160,12 +160,12 @@ const ListPro: React.FC = () => {
           >
             <EditOutlined />
           </Link >
-          {/* <button
+          <button
             onClick={() => handleDelete(record.id)}
             className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
           >
             <DeleteOutlined />
-          </button> */}
+          </button>
         </div >
       ),
     },

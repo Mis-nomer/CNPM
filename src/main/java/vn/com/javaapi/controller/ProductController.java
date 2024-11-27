@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,6 +65,14 @@ public class ProductController {
     @GetMapping("/list-product-by-type/{type}")
     public ResponseEntity<ProductsResponse> listProductsByType(@PathVariable("type") String type) {
         return new ResponseEntity<>(productService.listProductByType(type), HttpStatus.OK);
+    }
+
+
+    @DeleteMapping("/{id}")
+    public BaseResponse deleteProduct(@PathVariable("id") Long id) {
+        log.info("Delete product with id: {}", id);
+        productService.deleteProduct(id);
+        return BaseResponse.success();
     }
 
 }

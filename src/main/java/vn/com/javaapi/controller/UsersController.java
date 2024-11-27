@@ -51,4 +51,10 @@ public class UsersController {
         userService.updateUser(request);
         return BaseResponse.success();
     }
+
+    @PostMapping("/add")
+    public BaseResponse addUser(@RequestBody UserDTO request) {
+        userService.addUser(request);
+        return BaseResponse.success();
+    }
 }

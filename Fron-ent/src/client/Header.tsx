@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import SearchBar from './components/searchBar';
 
 const Header = () => {
   const [auth, setAuth] = useState<any>('');
   const navigate = useNavigate();
-  const { cartCount } = useCart();
+  const { cartCount, updateCartCount } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const user = JSON.parse(localStorage.getItem('userInfo') as string);
 
@@ -16,6 +17,10 @@ const Header = () => {
       setAuth('');
     }
   }, [JSON.stringify(user)]);
+
+  useEffect(() => {
+    updateCartCount();
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,24 +67,7 @@ const Header = () => {
               </div>
 
               <div className='hidden md:block flex-1 max-w-[500px] mx-4 lg:mx-8 relative group'>
-                <form method='get' className='relative'>
-                  <input
-                    type='text'
-                    className='w-full py-2 px-4 pr-10 rounded-lg border-2 border-transparent focus:border-yellow-400 outline-none text-sm transition-all duration-300 placeholder-gray-400'
-                    placeholder='Bạn cần tìm gì?'
-                  />
-                  <button type='submit' className='absolute right-3 top-1/2 -translate-y-1/2 hover:text-[#ED1C24] transition-colors'>
-                    <i className='fa-solid fa-magnifying-glass' />
-                  </button>
-                </form>
-                <div className='invisible opacity-0 group-focus-within:visible group-focus-within:opacity-100 absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg p-4 transition-all duration-300'>
-                  <p className='text-sm text-gray-500'>Gợi ý tìm kiếm:</p>
-                  <div className='mt-2 space-y-2'>
-                    <Link to="/" className='block text-sm hover:text-[#ED1C24] transition-colors'>Laptop Gaming</Link>
-                    <Link to="/" className='block text-sm hover:text-[#ED1C24] transition-colors'>Màn hình Gaming</Link>
-                    <Link to="/" className='block text-sm hover:text-[#ED1C24] transition-colors'>Bàn phím cơ</Link>
-                  </div>
-                </div>
+                <SearchBar />
               </div>
 
               <div className='flex items-center gap-4 text-white'>

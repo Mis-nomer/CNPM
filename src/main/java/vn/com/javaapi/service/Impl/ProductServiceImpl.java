@@ -111,4 +111,17 @@ public class ProductServiceImpl implements ProductService {
             .message("List products successful").data(productDTOList)
             .build();
     }
+
+    @Override
+    public void deleteProduct(Long id) {
+        var startTime = System.currentTimeMillis();
+        log.info("Begin delete product with id: {}.", id);
+        Optional<Products> optProducts = productRepository.findById(id);
+        if (optProducts.isEmpty()) {
+            log.error("Product not found with id: {}", id);
+            throw new RuntimeException("Product not found");
+        }
+        productRepository.deleteById(id);
+        log.info("Delete product successfully. Time handler: {} ms.", (System.currentTimeMillis() - startTime));
+    }
 }

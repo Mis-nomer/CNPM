@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Carousel } from "antd";
 
-// Type definitions
 interface Product {
     id: string;
     name: string;
@@ -48,14 +47,13 @@ const ProductSection = ({ optionsByCategory, filteredProducts, typeDisplayNames 
                         </Link>
                     </div>
 
-                    {/* Product List */}
-                    <div className="relative">
+                    <div className="relative product-carousel">
                         {filteredProducts[type]?.length > 4 ? (
-                            // Carousel if more than 4 products
                             <Carousel
                                 dots={false}
                                 arrows
                                 slidesToShow={4}
+                                className="product-carousel-container"
                                 responsive={[
                                     {
                                         breakpoint: 1024,
@@ -71,17 +69,18 @@ const ProductSection = ({ optionsByCategory, filteredProducts, typeDisplayNames 
                                     },
                                 ]}
                             >
-                                {filteredProducts[type]?.map((item: Product, index: number) => (
-                                    <div key={index} className="px-2">
-                                        <ProductCard item={item} />
+                                {filteredProducts[type]?.map((item: Product) => (
+                                    <div key={item.id} className="product-slide">
+                                        <div className="px-2">
+                                            <ProductCard item={item} />
+                                        </div>
                                     </div>
                                 ))}
                             </Carousel>
                         ) : (
-                            // Static grid for <= 4 products
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {filteredProducts[type]?.map((item: Product, index: number) => (
-                                    <ProductCard key={index} item={item} />
+                                {filteredProducts[type]?.map((item: Product) => (
+                                    <ProductCard key={item.id} item={item} />
                                 ))}
                             </div>
                         )}

@@ -1,5 +1,11 @@
+// src/contexts/CartContext.tsx
 import { createContext, useContext, useState, useEffect } from 'react';
 import { getCartService } from '@/api/carts';
+
+interface CartItem {
+    quantity: number;
+    // Thêm các field khác nếu cần
+}
 
 interface CartContextType {
     cartCount: number;
@@ -7,39 +13,65 @@ interface CartContextType {
     updateCartCount: () => Promise<void>;
 }
 
-const CartContext = createContext<CartContextType>({
+const defaultContextValue: CartContextType = {
     cartCount: 0,
     setCartCount: () => { },
-    updateCartCount: async () => { }
-});
+    updateCartCount: async () => { },
+};
 
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+const CartContext = createContext<CartContextType>(defaultContextValue);
+
+interface CartProviderProps {
+    children: React.ReactNode;
+}
+
+export const CartProvider = ({ children }: CartProviderProps) => {
     const [cartCount, setCartCount] = useState(0);
-    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    const [userId, setUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        setUserId(userInfo?.id || null);
+    }, []);
 
     const updateCartCount = async () => {
-        if (userInfo?.id) {
-            try {
-                const response = await getCartService(userInfo.id);
-                const count = response.data.data.reduce((total: number, item: any) => total + item.quantity, 0);
-                setCartCount(count);
-            } catch (error) {
-                console.error('Error fetching cart count:', error);
-            }
-        } else {
+        if (!userId) {
+            setCartCount(0);
+            return;
+        }
+
+        try {
+            const response = await getCartService(userId);
+            const items: CartItem[] = response.data.data;
+            const count = items.reduce((total, item) => total + item.quantity, 0);
+            setCartCount(count);
+        } catch (error) {
+            console.error('Error fetching cart count:', error);
             setCartCount(0);
         }
     };
 
     useEffect(() => {
         updateCartCount();
-    }, [userInfo?.id]);
+    }, [userId]);
+
+    const contextValue = {
+        cartCount,
+        setCartCount,
+        updateCartCount,
+    };
 
     return (
-        <CartContext.Provider value={{ cartCount, setCartCount, updateCartCount }}>
+        <CartContext.Provider value={contextValue}>
             {children}
         </CartContext.Provider>
     );
 };
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+    const context = useContext(CartContext);
+    if (context === undefined) {
+        throw new Error('useCart must be used within a CartProvider');
+    }
+    return context;
+};

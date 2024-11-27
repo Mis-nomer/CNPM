@@ -10,10 +10,8 @@ const Signup = () => {
     const { data } = await signup(values);
     if (data?.code === '00') {
       console.log('data response', data?.data);
-      message.success('Đăng ký tài khoản thành công, chuyển sang trang đăng nhập sau 2s');
-      setTimeout(() => {
-        navigate('/signin');
-      }, 2000);
+      message.success('Đăng ký tài khoản thành công');
+      navigate('/signin');
     } else {
       message.error(data?.data?.message);
     }

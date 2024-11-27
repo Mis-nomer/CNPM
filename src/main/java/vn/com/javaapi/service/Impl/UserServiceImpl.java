@@ -75,4 +75,21 @@ public class UserServiceImpl implements UserService {
         userRepository.save(users);
         log.info("End update user with response: {} and Time handler: {} ms.", gson.toJson(users), (System.currentTimeMillis() - startTime));
     }
+
+    @Override
+    public void addUser(UserDTO user) {
+        var startTime = System.currentTimeMillis();
+        log.info("Begin add new user with request: {}.", gson.toJson(user));
+
+        // Hash mật khẩu trước khi lưu
+        user.setPassword(HashUtil.hash256PassWord(user.getPassword()));
+        user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        user.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+
+        Users users = userMapper.toEntityUsers(user);
+        userRepository.save(users);
+
+        log.info("End add user with response: {} and Time handler: {} ms.",
+            gson.toJson(users), (System.currentTimeMillis() - startTime));
+    }
 }

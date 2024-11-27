@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
-import { message } from 'antd'
-import { getAll, listOnePro } from '@/api/products'
 import { addCartService } from '@/api/carts'
+import { getAll, listOnePro } from '@/api/products'
+import { message } from 'antd'
 import { ChevronRight, Home, Minus, Plus, ShoppingCart, Star } from 'lucide-react'
 import numeral from 'numeral'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCart } from '../../../context/CartContext'
+import ReviewSection from './productReview'
 
-// Types
 interface ProductType {
   id: number
   name: string
@@ -58,7 +58,6 @@ const typeDisplayNames: Record<string, string> = {
   hangcu: 'Hàng cũ'
 }
 
-// Components
 const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
   const navigate = useNavigate()
   const handleClick = useCallback(() => {
@@ -192,20 +191,16 @@ const ProductDetail: React.FC = () => {
         message.error('Bạn cần đăng nhập để thêm vào giỏ hàng')
         return
       }
-
       if (quantity > product.quantity) {
         message.error('Số lượng vượt quá hàng có sẵn')
         return
       }
-
       setAddingToCart(true)
-
       const cartData: IAddCart = {
         productId: product.id,
         quantity,
         userId: userInfo.id
       }
-
       await addCartService(cartData)
       updateCartCount();
       message.success('Thêm vào giỏ hàng thành công')
@@ -232,7 +227,6 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center space-x-2 text-sm">
@@ -256,10 +250,8 @@ const ProductDetail: React.FC = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Product Info */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Product Image */}
             <div className="aspect-square relative rounded-lg overflow-hidden bg-white border">
               <img
                 src={product.image}
@@ -267,14 +259,10 @@ const ProductDetail: React.FC = () => {
                 className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
               />
             </div>
-
-            {/* Product Details */}
             <div className="space-y-6">
               <h1 className="text-2xl font-bold text-gray-900">
                 {product.name}
               </h1>
-
-              {/* Price */}
               <div className="flex items-end gap-3">
                 <span className="text-3xl font-bold text-red-600">
                   {product.salePrice.toLocaleString('vi-VN', {
@@ -290,7 +278,6 @@ const ProductDetail: React.FC = () => {
                 </span>
               </div>
 
-              {/* Quantity Selector */}
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">Số lượng:</span>
                 <div className="flex items-center border rounded-lg">
@@ -335,7 +322,6 @@ const ProductDetail: React.FC = () => {
                 </button>
               )}
 
-              {/* Policy Box */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <h3 className="font-semibold text-gray-900">
                   Chính sách mua hàng
@@ -371,9 +357,7 @@ const ProductDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Specifications and Description */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Description */}
           <div className="md:col-span-2 bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-bold mb-4 text-gray-900">
               Đặc điểm nổi bật
@@ -384,14 +368,13 @@ const ProductDetail: React.FC = () => {
             />
           </div>
 
-          {/* Specifications */}
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-bold mb-4 text-gray-900">
               Thông số kỹ thuật
             </h2>
             <dl className="space-y-3">
               {specifications
-                .filter(spec => spec.value) // Only show specs that have values
+                .filter(spec => spec.value)
                 .map((spec) => (
                   <div
                     key={spec.label}
@@ -405,7 +388,6 @@ const ProductDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Similar Products */}
         {similarProducts.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -421,37 +403,7 @@ const ProductDetail: React.FC = () => {
             </div>
           </section>
         )}
-
-        {/* Reviews Section - You can implement this later */}
-        <section className="mt-8 bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">
-            Đánh giá sản phẩm
-          </h2>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="text-4xl font-bold text-gray-900">4.8</div>
-              <div className="flex flex-col">
-                <div className="flex text-yellow-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} fill="currentColor" />
-                  ))}
-                </div>
-                <div className="text-sm text-gray-500">7 đánh giá</div>
-              </div>
-            </div>
-
-            {userInfo && (
-              <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                Viết đánh giá
-              </button>
-            )}
-          </div>
-
-          {/* Placeholder for review list */}
-          <div className="mt-6 text-center text-gray-500">
-            Chưa có đánh giá nào cho sản phẩm này
-          </div>
-        </section>
+        <ReviewSection />
       </main>
     </div>
   )
