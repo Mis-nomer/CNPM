@@ -29,6 +29,15 @@ services:
             - 8080:8080
         networks:
             - main
+    backend:
+        container_name: shop_backend
+        build:
+            context: ./Backend
+            dockerfile: Dockerfile
+        depends_on:
+            - database
+        networks:
+            - main
 networks:
     main:
         driver: bridge

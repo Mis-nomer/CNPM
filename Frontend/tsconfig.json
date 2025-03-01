@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "node",
@@ -18,13 +22,29 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/admin/*": ["./src/admin/*"],
-      "@/api/*": ["./src/api/*"],
-      "@/client/*": ["./src/client/*"],
-      "@/redux/*": ["./src/redux/*"],
-      "@/type/*": ["./src/type/*"]
+      "@/admin/*": [
+        "./src/admin/*"
+      ],
+      "@/api/*": [
+        "./src/api/*"
+      ],
+      "@/client/*": [
+        "./src/client/*"
+      ],
+      "@/redux/*": [
+        "./src/redux/*"
+      ],
+      "@/type/*": [
+        "./src/type/*"
+      ]
     }
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

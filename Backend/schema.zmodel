@@ -1,11 +1,18 @@
 // This is your Prisma schema file enhanced with ZenStack annotations
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+plugin hooks {
+  provider = '@zenstackhq/tanstack-query'
+  output = "../Frontend/src/hooks"
+  target = "react"
 }
 
 // Enhanced user model with more roles and functionality
