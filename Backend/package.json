@@ -1,0 +1,31 @@
+{
+  "name": "backend",
+  "module": "index.ts",
+  "type": "module",
+  "prisma": {
+    "seed": "bun ./prisma/seed.ts"
+  },
+  "scripts": {
+    "start": "bun run --hot src/index.ts",
+    "p:deploy": "bun prisma migrate deploy",
+    "p:dev": "bun prisma migrate dev",
+    "p:seed": "bun prisma db seed"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prisma": "^6.4.1",
+    "zenstack": "2.12.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "@zenstackhq/runtime": "2.12.0",
+    "@zenstackhq/server": "^2.12.0",
+    "hono": "^4.7.2"
+  },
+  "trustedDependencies": [
+    "zenstack"
+  ]
+}

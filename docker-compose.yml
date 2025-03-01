@@ -1,18 +1,36 @@
-version: '3.8'
 services:
-    mysql:
-        image: mysql:8.0
-        container_name: mysql_db
+    database:
+        image: postgres:latest
+        container_name: shop_postgres
         environment:
-            - MYSQL_ROOT_PASSWORD=admin123
-            - MYSQL_DATABASE=shoppee
-            - MYSQL_USER=shoppee
-            - MYSQL_PASSWORD=admin123
-        ports:
-            - "3306:3306"
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            PGDATA: /data/postgres
+            POSTGRES_DB: bank
         volumes:
-            - mysql_data:/var/lib/mysql
-        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-
+            - db:/data/postgres
+        ports:
+            - "5332:5432"
+        networks:
+            - main
+        restart: unless-stopped
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+    admin:
+        container_name: shop_adminer
+        image: adminer:latest
+        restart: always
+        depends_on:
+            - database
+        ports:
+            - 8080:8080
+        networks:
+            - main
+networks:
+    main:
+        driver: bridge
 volumes:
-    mysql_data:
+    db:

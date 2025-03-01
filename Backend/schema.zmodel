@@ -1,0 +1,337 @@
+// This is your Prisma schema file enhanced with ZenStack annotations
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enhanced user model with more roles and functionality
+model User {
+  id                Int       @id @default(autoincrement())
+  email             String    @unique
+  username          String    @unique
+  password          String
+  name              String
+  phone             String?
+  addresses         Address[]
+  birthday          DateTime? @db.Date
+  isEnabled         Boolean   @default(true)
+  role              Role      @default(CUSTOMER)
+  profileImage      String?   @map("profile_image")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastLoginAt       DateTime? @map("last_login_at")
+  
+  // Relations
+  carts             Cart[]
+  orders            Order[]
+  deliveries        Delivery[]       @relation("DeliveryDriver")
+
+  @@map("users")
+  @@allow('create', true)
+  @@allow('read', auth().id == id)
+  @@allow('update', auth() == this || auth().role == ADMIN)
+  @@allow('delete', auth().role == ADMIN)
+}
+
+enum Role {
+  CUSTOMER
+  DRIVER
+  MANAGER
+  ADMIN
+}
+
+model Address {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  label           String    // e.g., "Home", "Work", etc.
+  streetAddress   String    @map("street_address")
+  city            String
+  state           String?
+  postalCode      String    @map("postal_code")
+  country         String
+  isDefault       Boolean   @default(false) @map("is_default")
+  phoneNumber     String?   @map("phone_number")
+  deliveryNotes   String?   @map("delivery_notes")
+  
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryFrom    Delivery[] @relation("DeliveryFrom")
+  deliveryTo      Delivery[] @relation("DeliveryTo")
+  orders          Order[]   @relation("ShippingAddress")
+
+  @@map("addresses")
+  @@allow('create,read,update,delete', auth() == user)
+  @@allow('read', auth().role == DRIVER)
+  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
+}
+
+model Category {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  description     String?
+  slug            String    @unique
+  parentId        Int?      @map("parent_id")
+  isActive        Boolean   @default(true) @map("is_active")
+  
+  // Relations
+  parent          Category? @relation("SubCategories", fields: [parentId], references: [id])
+  subCategories   Category[] @relation("SubCategories")
+
+  @@map("categories")
+  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', true)
+
+	product Product[]
+}
+
+model Product {
+  id                Int       @id @default(autoincrement())
+  name              String
+  description       String?   @db.Text
+  slug              String    @unique
+  quantity          Int       @default(0)
+  brand             String?
+  categoryId        Int 
+  status            ProductStatus @default(ACTIVE)
+  type              String?
+  weight            Decimal?  @db.Decimal(8, 2)
+  dimensions        String?   // Format: "LxWxH"
+  
+  // Timestamps
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  variants          ProductVariant[]
+  carts             Cart[]
+  orderItems        OrderItem[]
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@map("products")
+  @@allow('create,delete', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('update', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', true)
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+  COMING_SOON
+}
+
+model Attribute {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  displayName     String    @map("display_name")
+  
+  // Relations
+  values          AttributeValue[]
+
+  @@map("attributes")
+  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', true)
+}
+
+model AttributeValue {
+  id              Int       @id @default(autoincrement())
+  attributeId     Int       @map("attribute_id")
+  value           String
+  
+  // Relations
+  attribute       Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  variantOptions  VariantOption[]
+
+  @@unique([attributeId, value])
+  @@map("attribute_values")
+  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', true)
+}
+
+
+model ProductVariant {
+  id              Int       @id @default(autoincrement())
+  productId       Int       @map("product_id")
+  sku             String    @unique
+  price           Decimal   @db.Decimal(10, 2)
+  salePrice       Decimal?  @db.Decimal(10, 2) @map("sale_price")
+  quantity        Int       @default(0)
+  image           String?
+  
+  // Relations
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  options         VariantOption[]
+
+  @@map("product_variants")
+  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', true)
+}
+
+model VariantOption {
+  id              Int       @id @default(autoincrement())
+  variantId       Int       @map("variant_id")
+  attributeValueId Int      @map("attribute_value_id")
+  
+  // Relations
+  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  attributeValue  AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, attributeValueId])
+  @@map("variant_options")
+  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', true)
+}
+
+model Cart {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  productId       Int       @map("product_id")
+  variantId       Int?      @map("variant_id")
+  quantity        Int
+  addedAt         DateTime  @default(now()) @map("added_at")
+  
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, variantId])
+  @@map("carts")
+  @@allow('create,read,update,delete', auth() == user)
+  @@allow('read', auth().role == MANAGER || auth().role == ADMIN)
+}
+
+model Order {
+  id              Int       @id @default(autoincrement())
+  orderCode       String    @unique @map("order_code")
+  userId          Int       @map("user_id")
+  addressId       Int       @map("address_id")
+  totalAmount     Decimal   @db.Decimal(10, 2) @map("total_amount")
+  subtotal        Decimal   @db.Decimal(10, 2)
+  taxAmount       Decimal   @db.Decimal(10, 2) @map("tax_amount")
+  shippingAmount  Decimal   @db.Decimal(10, 2) @map("shipping_amount")
+  discountAmount  Decimal   @db.Decimal(10, 2) @default(0) @map("discount_amount")
+  couponCode      String?   @map("coupon_code")
+  orderDate       DateTime  @default(now()) @map("order_date")
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
+  paymentMethod   String    @map("payment_method")
+  paymentId       String?   @map("payment_id")
+  notes           String?   @db.Text
+  
+  // Relations
+  user            User      @relation(fields: [userId], references: [id])
+  address         Address   @relation("ShippingAddress", fields: [addressId], references: [id])
+  orderItems      OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  deliveries      Delivery[]
+
+  @@map("orders")
+  @@allow('create', auth() == user)
+  @@allow('read', auth() == user || auth().role == DRIVER && deliveries?[driverId == auth().id])
+  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  AWAITING_PAYMENT
+  READY_FOR_PICKUP
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  ON_HOLD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+model OrderItem {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  productId       Int       @map("product_id")
+  quantity        Int
+  unitPrice       Decimal   @db.Decimal(10, 2) @map("unit_price")
+  totalPrice      Decimal   @db.Decimal(10, 2) @map("total_price")
+  discount        Decimal   @db.Decimal(10, 2) @default(0)
+  productName     String    @map("product_name") // Stored to keep history
+  productSku      String    @map("product_sku") // Stored to keep history
+  variantOptions  String?   @map("variant_options") // JSON string of options
+  
+  // Relations
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+  @@allow('create', auth() == order.user)
+  @@allow('read', auth().id == order.user.id || auth().role == DRIVER && order.deliveries?[driverId == auth().id])
+  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
+}
+
+model OrderStatusHistory {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  status          OrderStatus
+  notes           String?   @db.Text
+  createdById     Int       @map("created_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_status_history")
+  @@allow('create', auth().role == DRIVER || auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', auth().id == order.user.id)
+  @@allow('read', auth().role == DRIVER && order.deliveries?[driverId == auth().id])
+  @@allow('read', auth().role == MANAGER || auth().role == ADMIN)
+}
+
+model Delivery {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  driverId        Int?      @map("driver_id")
+  fromAddressId   Int       @map("from_address_id")
+  toAddressId     Int       @map("to_address_id")
+  scheduledDate   DateTime? @map("scheduled_date")
+  deliveredDate   DateTime? @map("delivered_date")
+  status          DeliveryStatus @default(PENDING)
+  estimatedDelivery DateTime? @map("estimated_delivery")
+  notes           String?   @db.Text
+  
+  // Relations
+  order           Order     @relation(fields: [orderId], references: [id])
+  driver          User?     @relation("DeliveryDriver", fields: [driverId], references: [id])
+  fromAddress     Address   @relation("DeliveryFrom", fields: [fromAddressId], references: [id])
+  toAddress       Address   @relation("DeliveryTo", fields: [toAddressId], references: [id])
+
+  @@map("deliveries")
+  @@allow('create', auth().role == MANAGER || auth().role == ADMIN)
+  @@allow('read', auth() == order.user)
+  @@allow('read,update', auth() == driver)
+  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  ATTEMPTED_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+}
