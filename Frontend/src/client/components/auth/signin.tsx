@@ -69,7 +69,7 @@ const Signin: React.FC = () => {
           </button>
         </Form>
         <div className="text-gray-600 text-sm text-center mt-4">
-          Bạn chưa có tài khoản?{' '}
+          Bạn chưa có tài khoản?
           <Link to="/signup" className="text-red-600 hover:underline">
             Đăng ký
           </Link>
