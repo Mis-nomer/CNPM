@@ -15,8 +15,14 @@ app.use(
     })
 );
 
+
 function getCurrentUser(ctx: Context): auth.User {
     // the implementation depends on your authentication mechanism
 
-    return {id: 1}
+    return { id: 1 }
 }
+
+export default {
+    port: 3000,
+    fetch: app.fetch,
+} 

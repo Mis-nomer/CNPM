@@ -1,4 +1,3 @@
-// This is your Prisma schema file enhanced with ZenStack annotations
 generator client {
   provider = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.1.x"]
@@ -11,334 +10,146 @@ datasource db {
 
 plugin hooks {
   provider = '@zenstackhq/tanstack-query'
-  output = "../Frontend/src/hooks"
+  output = "./hooks"
   target = "react"
 }
 
-// Enhanced user model with more roles and functionality
+
 model User {
-  id                Int       @id @default(autoincrement())
-  email             String    @unique
-  username          String    @unique
-  password          String
-  name              String
-  phone             String?
-  addresses         Address[]
-  birthday          DateTime? @db.Date
-  isEnabled         Boolean   @default(true)
-  role              Role      @default(CUSTOMER)
-  profileImage      String?   @map("profile_image")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  lastLoginAt       DateTime? @map("last_login_at")
+  id        BigInt    @id @default(autoincrement())
+  username  String    @unique
+  email     String    @unique
+  password  String
+  name      String
+  phone     String?
+  address   String?
+  birthday  DateTime? @db.Date
+  isEnabled Int       @default(1) // 1 for enabled, 0 for disabled
+  roleId    Int       @map("role_id") // 1 for admin, 2 for user
+  createdAt DateTime  @default(now()) @map("create_at")
+  updatedAt DateTime? @updatedAt @map("update_at")
   
   // Relations
-  carts             Cart[]
-  orders            Order[]
-  deliveries        Delivery[]       @relation("DeliveryDriver")
+  orders    Order[]
+  carts     Cart[]
 
-  @@map("users")
-  @@allow('create', true)
-  @@allow('read', auth().id == id)
-  @@allow('update', auth() == this || auth().role == ADMIN)
-  @@allow('delete', auth().role == ADMIN)
-}
-
-enum Role {
-  CUSTOMER
-  DRIVER
-  MANAGER
-  ADMIN
-}
-
-model Address {
-  id              Int       @id @default(autoincrement())
-  userId          Int       @map("user_id")
-  label           String    // e.g., "Home", "Work", etc.
-  streetAddress   String    @map("street_address")
-  city            String
-  state           String?
-  postalCode      String    @map("postal_code")
-  country         String
-  isDefault       Boolean   @default(false) @map("is_default")
-  phoneNumber     String?   @map("phone_number")
-  deliveryNotes   String?   @map("delivery_notes")
-  
-  // Relations
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveryFrom    Delivery[] @relation("DeliveryFrom")
-  deliveryTo      Delivery[] @relation("DeliveryTo")
-  orders          Order[]   @relation("ShippingAddress")
-
-  @@map("addresses")
-  @@allow('create,read,update,delete', auth() == user)
-  @@allow('read', auth().role == DRIVER)
-  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
-}
-
-model Category {
-  id              Int       @id @default(autoincrement())
-  name            String    @unique
-  description     String?
-  slug            String    @unique
-  parentId        Int?      @map("parent_id")
-  isActive        Boolean   @default(true) @map("is_active")
-  
-  // Relations
-  parent          Category? @relation("SubCategories", fields: [parentId], references: [id])
-  subCategories   Category[] @relation("SubCategories")
-
-  @@map("categories")
-  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  // Access policies
   @@allow('read', true)
-
-	product Product[]
+  @@allow('create', true)
+  @@allow('update', auth() == this || auth().roleId == 1)
+  @@allow('delete', auth().roleId == 1)
 }
 
 model Product {
-  id                Int       @id @default(autoincrement())
-  name              String
-  description       String?   @db.Text
-  slug              String    @unique
-  quantity          Int       @default(0)
-  brand             String?
-  categoryId        Int 
-  status            ProductStatus @default(ACTIVE)
-  type              String?
-  weight            Decimal?  @db.Decimal(8, 2)
-  dimensions        String?   // Format: "LxWxH"
+  id               BigInt        @id @default(autoincrement())
+  name             String
+  description      String?
+  price            Decimal       @db.Decimal(19, 2)
+  salePrice        Decimal?      @db.Decimal(19, 2) @map("sale_price")
+  quantity         BigInt
+  brand            String?
+  type             String    // Reference to product type
+  image            String?
+  thumbnail        String?
+  status           Int           @default(1) // 1 for active, 0 for inactive
+  productView      BigInt        @default(0) @map("product_view")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime?     @updatedAt @map("updated_at")
   
-  // Timestamps
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  
-  // Relations
-  variants          ProductVariant[]
-  carts             Cart[]
-  orderItems        OrderItem[]
-
-  category Category @relation(fields: [categoryId], references: [id])
-
-  @@map("products")
-  @@allow('create,delete', auth().role == MANAGER || auth().role == ADMIN)
-  @@allow('update', auth().role == MANAGER || auth().role == ADMIN)
-  @@allow('read', true)
-}
-
-enum ProductStatus {
-  ACTIVE
-  INACTIVE
-  OUT_OF_STOCK
-  DISCONTINUED
-  COMING_SOON
-}
-
-model Attribute {
-  id              Int       @id @default(autoincrement())
-  name            String    @unique
-  displayName     String    @map("display_name")
+  // Technical specifications
+  screenSize       String?       @map("screen_size")
+  screenResolution String?       @map("screen_reslution")
+  operatingSystem  String?       @map("operating_system")
+  cpu              String?
+  ram              String?
+  storage          String?
+  battery          String?
+  weight           String?
   
   // Relations
-  values          AttributeValue[]
+  category         Category      @relation(fields: [type], references: [code])
+  orderDetails     OrderDetail[]
+  carts            Cart[]
 
-  @@map("attributes")
-  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  // Access policies
   @@allow('read', true)
+  @@allow('create', auth().roleId == 1)
+  @@allow('update', auth().roleId == 1)
+  @@allow('delete', auth().roleId == 1)
 }
 
-model AttributeValue {
-  id              Int       @id @default(autoincrement())
-  attributeId     Int       @map("attribute_id")
-  value           String
+model Category {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique // Product type code (e.g., 'dienthoai')
+  name      String    // Display name (e.g., 'Điện thoại')
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
   
   // Relations
-  attribute       Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
-  variantOptions  VariantOption[]
+  products  Product[]
 
-  @@unique([attributeId, value])
-  @@map("attribute_values")
-  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
+  // Access policies
   @@allow('read', true)
-}
-
-
-model ProductVariant {
-  id              Int       @id @default(autoincrement())
-  productId       Int       @map("product_id")
-  sku             String    @unique
-  price           Decimal   @db.Decimal(10, 2)
-  salePrice       Decimal?  @db.Decimal(10, 2) @map("sale_price")
-  quantity        Int       @default(0)
-  image           String?
-  
-  // Relations
-  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  options         VariantOption[]
-
-  @@map("product_variants")
-  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
-  @@allow('read', true)
-}
-
-model VariantOption {
-  id              Int       @id @default(autoincrement())
-  variantId       Int       @map("variant_id")
-  attributeValueId Int      @map("attribute_value_id")
-  
-  // Relations
-  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  attributeValue  AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
-
-  @@unique([variantId, attributeValueId])
-  @@map("variant_options")
-  @@allow('create,update,delete', auth().role == MANAGER || auth().role == ADMIN)
-  @@allow('read', true)
+  @@allow('create', auth().roleId == 1)
+  @@allow('update', auth().roleId == 1)
+  @@allow('delete', auth().roleId == 1)
 }
 
 model Cart {
-  id              Int       @id @default(autoincrement())
-  userId          Int       @map("user_id")
-  productId       Int       @map("product_id")
-  variantId       Int?      @map("variant_id")
-  quantity        Int
-  addedAt         DateTime  @default(now()) @map("added_at")
+  id        BigInt  @id @default(autoincrement())
+  userId    BigInt  @map("user_id")
+  productId BigInt  @map("product_id")
+  quantity  BigInt
   
   // Relations
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId, variantId])
-  @@map("carts")
-  @@allow('create,read,update,delete', auth() == user)
-  @@allow('read', auth().role == MANAGER || auth().role == ADMIN)
+  // Access policies
+  @@allow('read', auth().id == userId)
+  @@allow('create', auth().id == userId)
+  @@allow('update', auth().id == userId)
+  @@allow('delete', auth().id == userId)
 }
 
 model Order {
-  id              Int       @id @default(autoincrement())
-  orderCode       String    @unique @map("order_code")
-  userId          Int       @map("user_id")
-  addressId       Int       @map("address_id")
-  totalAmount     Decimal   @db.Decimal(10, 2) @map("total_amount")
-  subtotal        Decimal   @db.Decimal(10, 2)
-  taxAmount       Decimal   @db.Decimal(10, 2) @map("tax_amount")
-  shippingAmount  Decimal   @db.Decimal(10, 2) @map("shipping_amount")
-  discountAmount  Decimal   @db.Decimal(10, 2) @default(0) @map("discount_amount")
-  couponCode      String?   @map("coupon_code")
-  orderDate       DateTime  @default(now()) @map("order_date")
-  status          OrderStatus @default(PENDING)
-  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
-  paymentMethod   String    @map("payment_method")
-  paymentId       String?   @map("payment_id")
-  notes           String?   @db.Text
+  id           BigInt        @id @default(autoincrement())
+  orderCode    String        @map("order_code")
+  nameOrder    String        @map("name_order")
+  phoneNumber  String        @map("phone_number")
+  address      String
+  notes        String?
+  orderDate    DateTime      @map("order_date")
+  deliveryDate DateTime?     @map("delivery_date")
+  orderStatus  String        @map("order_status")
+  totalAmount  Decimal       @map("total_amount") @db.Decimal(19, 2)
+  userId       BigInt        @map("user_id")
   
   // Relations
-  user            User      @relation(fields: [userId], references: [id])
-  address         Address   @relation("ShippingAddress", fields: [addressId], references: [id])
-  orderItems      OrderItem[]
-  statusHistory   OrderStatusHistory[]
-  deliveries      Delivery[]
+  user         User          @relation(fields: [userId], references: [id])
+  orderDetails OrderDetail[]
 
-  @@map("orders")
-  @@allow('create', auth() == user)
-  @@allow('read', auth() == user || auth().role == DRIVER && deliveries?[driverId == auth().id])
-  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
+  // Access policies
+  @@allow('read', auth().id == userId || auth().roleId == 1)
+  @@allow('create', auth().id == userId)
+  @@allow('update', auth().roleId == 1 || (auth().id == userId && orderStatus == "Chờ xác nhận"))
+  @@allow('delete', auth().roleId == 1)
 }
 
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  AWAITING_PAYMENT
-  READY_FOR_PICKUP
-  SHIPPED
-  OUT_FOR_DELIVERY
-  DELIVERED
-  CANCELLED
-  REFUNDED
-  ON_HOLD
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  REFUNDED
-  FAILED
-  EXPIRED
-  CANCELLED
-}
-
-model OrderItem {
-  id              Int       @id @default(autoincrement())
-  orderId         Int       @map("order_id")
-  productId       Int       @map("product_id")
-  quantity        Int
-  unitPrice       Decimal   @db.Decimal(10, 2) @map("unit_price")
-  totalPrice      Decimal   @db.Decimal(10, 2) @map("total_price")
-  discount        Decimal   @db.Decimal(10, 2) @default(0)
-  productName     String    @map("product_name") // Stored to keep history
-  productSku      String    @map("product_sku") // Stored to keep history
-  variantOptions  String?   @map("variant_options") // JSON string of options
+model OrderDetail {
+  id        BigInt  @id @default(autoincrement())
+  orderId   BigInt  @map("order_id")
+  productId BigInt  @map("product_id")
+  quantity  BigInt
+  unitPrice Decimal @map("unit_price") @db.Decimal(19, 2)
   
   // Relations
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product   @relation(fields: [productId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
 
-  @@map("order_items")
-  @@allow('create', auth() == order.user)
-  @@allow('read', auth().id == order.user.id || auth().role == DRIVER && order.deliveries?[driverId == auth().id])
-  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
-}
-
-model OrderStatusHistory {
-  id              Int       @id @default(autoincrement())
-  orderId         Int       @map("order_id")
-  status          OrderStatus
-  notes           String?   @db.Text
-  createdById     Int       @map("created_by_id")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  
-  // Relations
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@map("order_status_history")
-  @@allow('create', auth().role == DRIVER || auth().role == MANAGER || auth().role == ADMIN)
-  @@allow('read', auth().id == order.user.id)
-  @@allow('read', auth().role == DRIVER && order.deliveries?[driverId == auth().id])
-  @@allow('read', auth().role == MANAGER || auth().role == ADMIN)
-}
-
-model Delivery {
-  id              Int       @id @default(autoincrement())
-  orderId         Int       @map("order_id")
-  driverId        Int?      @map("driver_id")
-  fromAddressId   Int       @map("from_address_id")
-  toAddressId     Int       @map("to_address_id")
-  scheduledDate   DateTime? @map("scheduled_date")
-  deliveredDate   DateTime? @map("delivered_date")
-  status          DeliveryStatus @default(PENDING)
-  estimatedDelivery DateTime? @map("estimated_delivery")
-  notes           String?   @db.Text
-  
-  // Relations
-  order           Order     @relation(fields: [orderId], references: [id])
-  driver          User?     @relation("DeliveryDriver", fields: [driverId], references: [id])
-  fromAddress     Address   @relation("DeliveryFrom", fields: [fromAddressId], references: [id])
-  toAddress       Address   @relation("DeliveryTo", fields: [toAddressId], references: [id])
-
-  @@map("deliveries")
-  @@allow('create', auth().role == MANAGER || auth().role == ADMIN)
-  @@allow('read', auth() == order.user)
-  @@allow('read,update', auth() == driver)
-  @@allow('read,update', auth().role == MANAGER || auth().role == ADMIN)
-}
-
-enum DeliveryStatus {
-  PENDING
-  ASSIGNED
-  PICKED_UP
-  IN_TRANSIT
-  OUT_FOR_DELIVERY
-  ATTEMPTED_DELIVERY
-  DELIVERED
-  FAILED
-  CANCELLED
+  // Access policies
+  @@allow('read', order.userId == auth().id || auth().roleId == 1)
+  @@allow('create', auth() != null)
+  @@allow('update', auth().roleId == 1)
+  @@allow('delete', auth().roleId == 1)
 }
