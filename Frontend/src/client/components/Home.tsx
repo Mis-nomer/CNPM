@@ -34,57 +34,58 @@ const typeDisplayNames: { [key: string]: string } = {
   hangcu: 'Hàng cũ'
 }
 const Home = () => {
-  const [pro, setPro] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<{ [key: string]: Product[] }>({});
+  const [pro, setPro] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<{ [key: string]: Product[] }>({})
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await getAll();
-        setPro(data?.data);
+        const { data } = await getAll()
+
+        setPro(data)
       } catch (err) {
-        console.log('Error:', err);
+        console.log('Error:', err)
       }
-    };
-    fetchData();
-  }, []);
+    }
+    fetchData()
+  }, [])
 
   useEffect(() => {
     const filterProductsByType = () => {
-      const categorizedProducts: { [key: string]: Product[] } = {};
+      const categorizedProducts: { [key: string]: Product[] } = {}
       optionsByCategory.productTypes.forEach((type: string) => {
-        categorizedProducts[type] = pro.filter((product) => product?.type === type);
-      });
-      setFilteredProducts(categorizedProducts);
-    };
+        categorizedProducts[type] = pro.filter((product) => product?.type === type)
+      })
+      setFilteredProducts(categorizedProducts)
+    }
 
-    filterProductsByType();
-  }, [pro]);
+    filterProductsByType()
+  }, [pro])
   return (
     <div>
       <div className='w-[1200px] h-[fit-content] m-auto flex'>
-        <div className="w-[250px] mr-4 bg-white rounded-xl shadow-lg h-max">
-          <div className="bg-[#ED1C24] p-3">
-            <h3 className="text-white font-bold text-base">Danh mục sản phẩm</h3>
+        <div className='w-[250px] mr-4 bg-white rounded-xl shadow-lg h-max'>
+          <div className='bg-[#ED1C24] p-3'>
+            <h3 className='text-white font-bold text-base'>Danh mục sản phẩm</h3>
           </div>
-          <div className="py-2">
+          <div className='py-2'>
             <ul>
               {optionsByCategory.productTypes.map((type: string) => (
-                <li key={type} className="group">
+                <li key={type} className='group'>
                   <Link
                     to={`/product/${type}`}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 transition-all"
+                    className='flex items-center justify-between px-4 py-2 hover:bg-gray-50 transition-all'
                   >
-                    <span className="text-[13px] font-medium text-gray-700 group-hover:text-[#ED1C24] transition-colors">
+                    <span className='text-[13px] font-medium text-gray-700 group-hover:text-[#ED1C24] transition-colors'>
                       {typeDisplayNames[type]}
                     </span>
-                    <div className="text-gray-400 w-[7px] group-hover:text-[#ED1C24] transform group-hover:translate-x-0.5 transition-all">
+                    <div className='text-gray-400 w-[7px] group-hover:text-[#ED1C24] transform group-hover:translate-x-0.5 transition-all'>
                       <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 320 512"
-                        className="fill-current"
-                        height="10"
+                        xmlns='http://www.w3.org/2000/svg'
+                        viewBox='0 0 320 512'
+                        className='fill-current'
+                        height='10'
                       >
-                        <path d="M96 480c-8.188 0-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L242.8 256L73.38 86.63c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l192 192c12.5 12.5 12.5 32.75 0 45.25l-192 192C112.4 476.9 104.2 480 96 480z" />
+                        <path d='M96 480c-8.188 0-16.38-3.125-22.62-9.375c-12.5-12.5-12.5-32.75 0-45.25L242.8 256L73.38 86.63c-12.5-12.5-12.5-32.75 0-45.25s32.75-12.5 45.25 0l192 192c12.5 12.5 12.5 32.75 0 45.25l-192 192C112.4 476.9 104.2 480 96 480z' />
                       </svg>
                     </div>
                   </Link>
@@ -97,16 +98,32 @@ const Home = () => {
           <div className='banner-content'>
             <Carousel autoplay arrows>
               <div>
-                <img src="https://file.hstatic.net/200000722513/file/uu_dai_soc_banner_web_slider_800x400.png" className=' w-full h-full object-cover' alt="" />
+                <img
+                  src='https://file.hstatic.net/200000722513/file/uu_dai_soc_banner_web_slider_800x400.png'
+                  className=' w-full h-full object-cover'
+                  alt=''
+                />
               </div>
               <div>
-                <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_rog800x400.jpg" className=' w-full h-full object-cover' alt="" />
+                <img
+                  src='https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_rog800x400.jpg'
+                  className=' w-full h-full object-cover'
+                  alt=''
+                />
               </div>
               <div>
-                <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_vivobook_s_gearvn__800x400_.jpg" className=' w-full h-full object-cover' alt="" />
+                <img
+                  src='https://file.hstatic.net/200000722513/file/thang_11_laptop_vivobook_s_gearvn__800x400_.jpg'
+                  className=' w-full h-full object-cover'
+                  alt=''
+                />
               </div>
               <div>
-                <img src="https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_gearvn_800x400.jpg" className=' w-full h-full object-cover' alt="" />
+                <img
+                  src='https://file.hstatic.net/200000722513/file/thang_11_laptop_asus_gearvn_800x400.jpg'
+                  className=' w-full h-full object-cover'
+                  alt=''
+                />
               </div>
             </Carousel>
             <div className='banner-title'>
@@ -174,8 +191,8 @@ const Home = () => {
           </div>
         </div>
       </div>
-      <div className="content pt-14 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="overflow-hidden rounded-lg">
+      <div className='content pt-14 grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <div className='overflow-hidden rounded-lg'>
           <img
             alt='Banner 1'
             className='right-banner-item  object-cover hover:scale-105 transition-transform duration-300'
@@ -183,7 +200,7 @@ const Home = () => {
           />
         </div>
 
-        <div className="overflow-hidden rounded-lg">
+        <div className='overflow-hidden rounded-lg'>
           <img
             alt='Banner 2'
             className='right-banner-item  object-cover hover:scale-105 transition-transform duration-300'
@@ -191,7 +208,7 @@ const Home = () => {
           />
         </div>
 
-        <div className="overflow-hidden rounded-lg">
+        <div className='overflow-hidden rounded-lg'>
           <img
             alt='Banner 3'
             className='right-banner-item  object-cover hover:scale-105 transition-transform duration-300'

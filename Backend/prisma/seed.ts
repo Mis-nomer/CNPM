@@ -37,7 +37,6 @@ async function main() {
   console.log('Seeding users...');
   const users = [
     {
-      username: 'admin',
       email: 'admin@example.com',
       password: await hashPassword('admin123'),
       name: 'Site Administrator',
@@ -47,7 +46,6 @@ async function main() {
       isEnabled: 1
     },
     {
-      username: 'john',
       email: 'john@example.com',
       password: await hashPassword('12345'),
       name: 'John Doe',
@@ -57,7 +55,6 @@ async function main() {
       isEnabled: 1
     },
     {
-      username: 'sarah',
       email: 'sarah@example.com',
       password: await hashPassword('sarah123'),
       name: 'Sarah Smith',
@@ -67,7 +64,6 @@ async function main() {
       isEnabled: 1
     },
     {
-      username: 'test',
       email: 'test@example.com',
       password: await hashPassword('test123'),
       name: 'Linh Đào Ngọc',
@@ -80,7 +76,7 @@ async function main() {
 
   for (const user of users) {
     await prisma.user.upsert({
-      where: { username: user.username },
+      where: { email: user.email },
       update: {},
       create: user
     });
@@ -317,9 +313,9 @@ async function main() {
   }
 
   // Get user and product IDs for the rest of the seed
-  const testUser = await prisma.user.findUnique({ where: { username: 'test' } });
-  const sarahUser = await prisma.user.findUnique({ where: { username: 'sarah' } });
-  const johnUser = await prisma.user.findUnique({ where: { username: 'john' } });
+  const testUser = await prisma.user.findUnique({ where: { email: 'test@example.com' } });
+  const sarahUser = await prisma.user.findUnique({ where: { email: 'sarah@example.com' } });
+  const johnUser = await prisma.user.findUnique({ where: { email: 'john@example.com' } });
 
   const smartLightBulb = await prisma.product.findFirst({ where: { name: 'Smart Light Bulb' } });
   const iPhone = await prisma.product.findFirst({ where: { name: 'iPhone 15 Pro' } });

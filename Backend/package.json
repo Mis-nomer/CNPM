@@ -6,13 +6,11 @@
     "seed": "bun ./prisma/seed.ts"
   },
   "scripts": {
-    "start": "bun run --hot index.ts",
+    "start": "bun run --hot ./src/index.ts",
     "p:deploy": "bun prisma migrate deploy",
     "p:dev": "bun prisma migrate dev",
     "p:seed": "bun prisma db seed",
-    "cpy": "bun run copy.ts",
-    "gen": "bun zenstack generate",
-    "postgen": "bun cpy"
+    "gen": "bun zenstack generate"
   },
   "devDependencies": {
     "@types/bun": "latest",

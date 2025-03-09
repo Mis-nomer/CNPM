@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Copy dependency manifests.
 COPY package.json bun.lock index.ts ./
+COPY /src ./src
 
 # Install dependencies with Bun.
 RUN bun install

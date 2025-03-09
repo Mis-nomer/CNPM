@@ -16,12 +16,12 @@ export const listAllOrderByUser = (id: number) => {
 }
 
 export const addOrders = (data: Object) => {
-  const url = "/orders/add"
+  const url = "/order"
   return instance.post(url, data)
 }
 
 export const updateStatusOrder = (data: any) => {
-  const url = `/orders/update-status`
+  const url = `/order`
   return instance.put(url, data);
 }
 

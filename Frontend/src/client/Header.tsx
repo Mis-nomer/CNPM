@@ -1,35 +1,43 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import SearchBar from './components/searchBar';
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useCart } from '../context/CartContext'
+import SearchBar from './components/searchBar'
+import { listUser } from '@/api/user'
 
 const Header = () => {
-  const [auth, setAuth] = useState<any>('');
-  const navigate = useNavigate();
-  const { cartCount, updateCartCount } = useCart();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const user = JSON.parse(localStorage.getItem('userInfo') as string);
+  const [auth, setAuth] = useState<any>('')
+  const navigate = useNavigate()
+  const { cartCount, updateCartCount } = useCart()
+  const [isScrolled, setIsScrolled] = useState(false)
+  const user = listUser()
+
+  const grabMe = async () => {
+    const { data } = await listUser()
+    if (Array.isArray(data)) {
+      setAuth(data.at(0))
+    } else setAuth(data)
+  }
 
   useEffect(() => {
     if (user) {
-      setAuth(user);
+      setAuth(user)
     } else {
-      setAuth('');
+      setAuth('')
     }
-  }, [JSON.stringify(user)]);
+  }, [JSON.stringify(user)])
 
   useEffect(() => {
-    updateCartCount();
-  });
+    updateCartCount()
+  })
 
   useEffect(() => {
+    void grabMe()
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
+      setIsScrolled(window.scrollY > 50)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const logout = () => {
     localStorage.removeItem('userInfo')
@@ -40,16 +48,18 @@ const Header = () => {
   }
 
   return (
-    <div className="relative  w-full">
+    <div className='relative  w-full'>
       <div className='bg-[#111111] w-full overflow-hidden'>
         <img
-          src="https://file.hstatic.net/200000722513/file/thang_11_pc_gvn_z890xcooler-1280x50px.jpg"
-          alt="Banner"
+          src='https://file.hstatic.net/200000722513/file/thang_11_pc_gvn_z890xcooler-1280x50px.jpg'
+          alt='Banner'
           className='w-full h-[50px] object-cover hover:scale-105 transition-transform duration-300'
         />
       </div>
 
-      <div className={`sticky top-0 left-0 right-0 z-50 transition-shadow duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
+      <div
+        className={`sticky top-0 left-0 right-0 z-50 transition-shadow duration-300 ${isScrolled ? 'shadow-lg' : ''}`}
+      >
         <div className='bg-[#ED1C24] w-full'>
           <div className='container mx-auto px-4 lg:px-8'>
             <div className='flex items-center justify-between h-[60px] gap-4'>
@@ -133,7 +143,7 @@ const Header = () => {
                           ĐĂNG XUẤT
                         </button>
                         <Link
-                          to="/thong-tin"
+                          to='/thong-tin'
                           className='block w-full py-2 px-4 border-2 border-black text-black text-center rounded font-semibold hover:bg-black hover:text-white transition-all duration-300'
                         >
                           THÔNG TIN CÁ NHÂN
@@ -162,13 +172,13 @@ const Header = () => {
                       </div>
                       <div className='space-y-2'>
                         <Link
-                          to="/signin"
+                          to='/signin'
                           className='block w-full py-2 px-4 bg-black text-white text-center rounded font-semibold hover:bg-opacity-90 transition-all duration-300'
                         >
                           ĐĂNG NHẬP
                         </Link>
                         <Link
-                          to="/signup"
+                          to='/signup'
                           className='block w-full py-2 px 4 border-2 border-black text-black text-center rounded font-semibold hover:bg-black hover:text-white transition-all duration-300'
                         >
                           ĐĂNG KÝ
@@ -193,7 +203,10 @@ const Header = () => {
               className='w-full py-2 px-4 pr-10 rounded-lg border-2 border-transparent focus:border-yellow-400 outline-none text-sm transition-all'
               placeholder='Bạn cần tìm gì?'
             />
-            <button type='submit' className='absolute right-3 top-1/2 -translate-y-1/2 hover:text-[#ED1C24] transition-colors'>
+            <button
+              type='submit'
+              className='absolute right-3 top-1/2 -translate-y-1/2 hover:text-[#ED1C24] transition-colors'
+            >
               <i className='fa-solid fa-magnifying-glass' />
             </button>
           </form>
@@ -210,19 +223,31 @@ const Header = () => {
                 <i className='fa-solid fa-newspaper'></i>
                 <span>Tin công nghệ</span>
               </Link>
-              <Link to='/' className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'>
+              <Link
+                to='/'
+                className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'
+              >
                 <i className='fa-solid fa-screwdriver-wrench'></i>
                 <span>Dịch vụ sửa chữa</span>
               </Link>
-              <Link to='/' className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'>
+              <Link
+                to='/'
+                className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'
+              >
                 <i className='fa-solid fa-house-laptop'></i>
                 <span>Dịch vụ kỹ thuật tại nhà</span>
               </Link>
-              <Link to='/' className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'>
+              <Link
+                to='/'
+                className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'
+              >
                 <i className='fa-solid fa-arrows-rotate'></i>
                 <span>Thu cũ đổi mới VGA</span>
               </Link>
-              <Link to='/' className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'>
+              <Link
+                to='/'
+                className='hidden md:flex items-center gap-2 py-2 hover:text-[#ED1C24] transition-colors min-w-max'
+              >
                 <i className='fa-solid fa-shield'></i>
                 <span>Tra cứu bảo hành</span>
               </Link>
@@ -231,7 +256,7 @@ const Header = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

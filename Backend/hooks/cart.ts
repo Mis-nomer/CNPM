@@ -328,7 +328,7 @@ export function useSuspenseCountCart<TArgs extends Prisma.CartCountArgs, TQueryF
     return useSuspenseModelQuery<TQueryFnData, TData, TError>('Cart', `${endpoint}/cart/count`, args, options, fetch);
 }
 
-export function useCheckCart<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: number; userId?: number; productId?: number; variantId?: number; quantity?: number }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
+export function useCheckCart<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: number; userId?: number; productId?: number; quantity?: number }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
     const { endpoint, fetch } = getHooksContext();
     return useModelQuery<boolean, boolean, TError>('Cart', `${endpoint}/cart/check`, args, options, fetch);
 }

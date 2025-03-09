@@ -15,16 +15,15 @@ generator client {
 
 model User {
   id        BigInt    @id() @default(autoincrement())
-  username  String    @unique()
   email     String    @unique()
   password  String
   name      String
   phone     String?
   address   String?
   birthday  DateTime? @db.Date()
-  isEnabled Int       @default(1)
-  roleId    Int       @map("role_id")
-  createdAt DateTime  @default(now()) @map("create_at")
+  isEnabled Int?      @default(1)
+  roleId    Int?      @default(2) @map("role_id")
+  createdAt DateTime? @default(now()) @map("create_at")
   updatedAt DateTime? @updatedAt() @map("update_at")
   orders    Order[]
   carts     Cart[]

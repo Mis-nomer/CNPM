@@ -8,25 +8,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-plugin hooks {
-  provider = '@zenstackhq/tanstack-query'
-  output = "./hooks"
-  target = "react"
-}
-
+// plugin hooks {
+//   provider = '@zenstackhq/tanstack-query'
+//   output = "./hooks"
+//   target = "react"
+// }
 
 model User {
   id        BigInt    @id @default(autoincrement())
-  username  String    @unique
   email     String    @unique
   password  String
   name      String
   phone     String?
   address   String?
   birthday  DateTime? @db.Date
-  isEnabled Int       @default(1) // 1 for enabled, 0 for disabled
-  roleId    Int       @map("role_id") // 1 for admin, 2 for user
-  createdAt DateTime  @default(now()) @map("create_at")
+  isEnabled Int?      @default(1) // 1 for enabled, 0 for disabled
+  roleId    Int?      @default(2) @map("role_id") // 1 for admin, 2 for user
+  createdAt DateTime? @default(now()) @map("create_at")
   updatedAt DateTime? @updatedAt @map("update_at")
   
   // Relations
@@ -34,8 +32,9 @@ model User {
   carts     Cart[]
 
   // Access policies
-  @@allow('read', true)
-  @@allow('create', true)
+  @@allow("all", auth().roleId == 1)
+  @@allow('read', auth().id == id)
+  @@allow('create', roleId == 2)
   @@allow('update', auth() == this || auth().roleId == 1)
   @@allow('delete', auth().roleId == 1)
 }

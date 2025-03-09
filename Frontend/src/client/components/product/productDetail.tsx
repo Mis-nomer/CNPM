@@ -1,5 +1,5 @@
 import { addCartService } from '@/api/carts'
-import { getAll, listOnePro } from '@/api/products'
+import { getAll, getAllProByType, listOnePro } from '@/api/products'
 import { message } from 'antd'
 import { ChevronRight, Home, Minus, Plus, ShoppingCart, Star } from 'lucide-react'
 import numeral from 'numeral'
@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCart } from '../../../context/CartContext'
 import ReviewSection from './productReview'
+import { listUser } from '@/api/user'
 
 interface ProductType {
   id: number
@@ -68,39 +69,37 @@ const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
   return (
     <div
       onClick={handleClick}
-      className="cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+      className='cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200'
     >
-      <div className="aspect-square relative overflow-hidden">
+      <div className='aspect-square relative overflow-hidden'>
         <img
           src={item.image}
           alt={item.name}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          className='w-full h-full object-cover hover:scale-105 transition-transform duration-300'
         />
       </div>
-      <div className="p-4">
-        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 min-h-[40px]">
-          {item.name}
-        </h3>
-        <div className="mt-2 space-y-1">
-          <div className="text-lg font-bold text-red-600">
+      <div className='p-4'>
+        <h3 className='text-sm font-medium text-gray-900 line-clamp-2 min-h-[40px]'>{item.name}</h3>
+        <div className='mt-2 space-y-1'>
+          <div className='text-lg font-bold text-red-600'>
             {item.salePrice.toLocaleString('vi-VN', {
               style: 'currency',
               currency: 'VND'
             })}
           </div>
-          <div className="text-sm text-gray-500 line-through">
+          <div className='text-sm text-gray-500 line-through'>
             {item.price.toLocaleString('vi-VN', {
               style: 'currency',
               currency: 'VND'
             })}
           </div>
         </div>
-        <div className="mt-2">
-          <div className="flex items-center text-yellow-400">
+        <div className='mt-2'>
+          <div className='flex items-center text-yellow-400'>
             {[...Array(5)].map((_, i) => (
-              <Star key={i} size={16} fill="currentColor" />
+              <Star key={i} size={16} fill='currentColor' />
             ))}
-            <span className="ml-2 text-sm text-gray-500">7 đánh giá</span>
+            <span className='ml-2 text-sm text-gray-500'>7 đánh giá</span>
           </div>
         </div>
       </div>
@@ -109,16 +108,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
 }
 
 const LoadingSpinner: React.FC = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-red-600" />
+  <div className='min-h-screen flex items-center justify-center'>
+    <div className='animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-red-600' />
   </div>
 )
 
 const ErrorState: React.FC = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h2 className="text-2xl font-bold text-gray-900">Không tìm thấy sản phẩm</h2>
-      <Link to="/" className="mt-4 inline-block text-red-600 hover:text-red-700">
+  <div className='min-h-screen flex items-center justify-center'>
+    <div className='text-center'>
+      <h2 className='text-2xl font-bold text-gray-900'>Không tìm thấy sản phẩm</h2>
+      <Link to='/' className='mt-4 inline-block text-red-600 hover:text-red-700'>
         Quay về trang chủ
       </Link>
     </div>
@@ -133,22 +132,34 @@ const ProductDetail: React.FC = () => {
   const [similarProducts, setSimilarProducts] = useState<ProductType[]>([])
   const [quantity, setQuantity] = useState<number>(1)
   const [addingToCart, setAddingToCart] = useState<boolean>(false)
-  const { updateCartCount } = useCart();
+  const { updateCartCount } = useCart()
+  const [auth, setAuth] = useState<any>('')
 
+  const grabMe = async () => {
+    const { data } = await listUser()
+    if (Array.isArray(data)) {
+      setAuth(data.at(0))
+    } else setAuth(data)
+  }
 
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null') as UserInfo | null
+  useEffect(() => {
+    void grabMe()
+  }, [])
 
-  const handleQuantityChange = useCallback((type: 'increase' | 'decrease') => {
-    setQuantity(prev => {
-      if (type === 'increase' && product) {
-        return Math.min(prev + 1, product.quantity)
-      }
-      if (type === 'decrease') {
-        return Math.max(prev - 1, 1)
-      }
-      return prev
-    })
-  }, [product])
+  const handleQuantityChange = useCallback(
+    (type: 'increase' | 'decrease') => {
+      setQuantity((prev) => {
+        if (type === 'increase' && product) {
+          return Math.min(prev + 1, product.quantity)
+        }
+        if (type === 'decrease') {
+          return Math.max(prev - 1, 1)
+        }
+        return prev
+      })
+    },
+    [product]
+  )
 
   const fetchProductData = useCallback(async () => {
     try {
@@ -164,14 +175,9 @@ const ProductDetail: React.FC = () => {
       setProduct(productResponse.data)
 
       if (productResponse.data.type) {
-        const { data: allProductsResponse } = await getAll()
-        const filteredProducts = allProductsResponse.data
-          .filter((item: ProductType) =>
-            item.type === productResponse.data.type &&
-            item.id !== productResponse.data.id
-          )
-          .slice(0, 5)
-        setSimilarProducts(filteredProducts)
+        const { data: similar } = await getAllProByType(productResponse.data.type)
+
+        setSimilarProducts(similar)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -187,7 +193,7 @@ const ProductDetail: React.FC = () => {
 
   const addToCart = async (product: ProductType) => {
     try {
-      if (!userInfo) {
+      if (!auth) {
         message.error('Bạn cần đăng nhập để thêm vào giỏ hàng')
         return
       }
@@ -199,10 +205,10 @@ const ProductDetail: React.FC = () => {
       const cartData: IAddCart = {
         productId: product.id,
         quantity,
-        userId: userInfo.id
+        userId: auth.id
       }
       await addCartService(cartData)
-      updateCartCount();
+      updateCartCount()
       message.success('Thêm vào giỏ hàng thành công')
     } catch (err) {
       message.error('Không thể thêm vào giỏ hàng')
@@ -226,51 +232,44 @@ const ProductDetail: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center space-x-2 text-sm">
-            <Link to="/" className="flex items-center text-gray-600 hover:text-red-600 transition-colors">
-              <Home className="w-4 h-4 mr-1" />
+    <div className='min-h-screen bg-gray-50'>
+      <nav className='bg-white shadow-sm'>
+        <div className='max-w-7xl mx-auto px-4 py-3'>
+          <div className='flex items-center space-x-2 text-sm'>
+            <Link to='/' className='flex items-center text-gray-600 hover:text-red-600 transition-colors'>
+              <Home className='w-4 h-4 mr-1' />
               <span>Trang chủ</span>
             </Link>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-            <Link
-              to={`/product/${product.type}`}
-              className="text-gray-600 hover:text-red-600 transition-colors"
-            >
+            <ChevronRight className='w-4 h-4 text-gray-400' />
+            <Link to={`/product/${product.type}`} className='text-gray-600 hover:text-red-600 transition-colors'>
               {typeDisplayNames[product.type]}
             </Link>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-            <span className="font-medium text-gray-900 line-clamp-1">
-              {product.name}
-            </span>
+            <ChevronRight className='w-4 h-4 text-gray-400' />
+            <span className='font-medium text-gray-900 line-clamp-1'>{product.name}</span>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="aspect-square relative rounded-lg overflow-hidden bg-white border">
+      <main className='max-w-7xl mx-auto px-4 py-8'>
+        <div className='bg-white rounded-2xl shadow-sm p-6 mb-8'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+            <div className='aspect-square relative rounded-lg overflow-hidden bg-white border'>
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+                className='w-full h-full object-contain hover:scale-105 transition-transform duration-300'
               />
             </div>
-            <div className="space-y-6">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {product.name}
-              </h1>
-              <div className="flex items-end gap-3">
-                <span className="text-3xl font-bold text-red-600">
+            <div className='space-y-6'>
+              <h1 className='text-2xl font-bold text-gray-900'>{product.name}</h1>
+              <div className='flex items-end gap-3'>
+                <span className='text-3xl font-bold text-red-600'>
                   {product.salePrice.toLocaleString('vi-VN', {
                     style: 'currency',
                     currency: 'VND'
                   })}
                 </span>
-                <span className="text-lg text-gray-500 line-through">
+                <span className='text-lg text-gray-500 line-through'>
                   {product.price.toLocaleString('vi-VN', {
                     style: 'currency',
                     currency: 'VND'
@@ -278,78 +277,63 @@ const ProductDetail: React.FC = () => {
                 </span>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">Số lượng:</span>
-                <div className="flex items-center border rounded-lg">
+              <div className='flex items-center space-x-4'>
+                <span className='text-gray-700'>Số lượng:</span>
+                <div className='flex items-center border rounded-lg'>
                   <button
                     onClick={() => handleQuantityChange('decrease')}
-                    className="p-2 hover:bg-gray-100 transition-colors rounded-l-lg"
+                    className='p-2 hover:bg-gray-100 transition-colors rounded-l-lg'
                     disabled={quantity <= 1 || addingToCart}
                   >
                     <Minus size={18} />
                   </button>
-                  <span className="w-12 text-center font-medium">
-                    {quantity}
-                  </span>
+                  <span className='w-12 text-center font-medium'>{quantity}</span>
                   <button
                     onClick={() => handleQuantityChange('increase')}
-                    className="p-2 hover:bg-gray-100 transition-colors rounded-r-lg"
+                    className='p-2 hover:bg-gray-100 transition-colors rounded-r-lg'
                     disabled={quantity >= product.quantity || addingToCart}
                   >
                     <Plus size={18} />
                   </button>
                 </div>
-                <span className="text-sm text-gray-500">
-                  Còn {numeral(product.quantity).format('0,0')} sản phẩm
-                </span>
+                <span className='text-sm text-gray-500'>Còn {numeral(product.quantity).format('0,0')} sản phẩm</span>
               </div>
 
               {product.quantity === 0 ? (
-                <div className="inline-block bg-gray-100 px-6 py-3 rounded-lg text-gray-500">
-                  Hết hàng
-                </div>
+                <div className='inline-block bg-gray-100 px-6 py-3 rounded-lg text-gray-500'>Hết hàng</div>
               ) : (
                 <button
                   onClick={() => addToCart(product)}
                   disabled={addingToCart}
-                  className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-colors ${addingToCart
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                    }`}
+                  className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-colors ${
+                    addingToCart ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
                 >
                   <ShoppingCart size={20} />
                   {addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
                 </button>
               )}
 
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-gray-900">
-                  Chính sách mua hàng
-                </h3>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm text-gray-600">
-                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
-                      <i className="fas fa-check text-green-600 text-xs" />
+              <div className='bg-gray-50 rounded-xl p-4 space-y-3'>
+                <h3 className='font-semibold text-gray-900'>Chính sách mua hàng</h3>
+                <ul className='space-y-2'>
+                  <li className='flex items-start gap-2 text-sm text-gray-600'>
+                    <div className='w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5'>
+                      <i className='fas fa-check text-green-600 text-xs' />
                     </div>
-                    <span>
-                      Máy mới 100%, chính hãng. Hoàn tiền 300% nếu phát hiện hàng giả
-                    </span>
+                    <span>Máy mới 100%, chính hãng. Hoàn tiền 300% nếu phát hiện hàng giả</span>
                   </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-600">
-                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
-                      <i className="fas fa-check text-green-600 text-xs" />
+                  <li className='flex items-start gap-2 text-sm text-gray-600'>
+                    <div className='w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5'>
+                      <i className='fas fa-check text-green-600 text-xs' />
                     </div>
-                    <span>
-                      Bảo hành 12 tháng chính hãng
-                    </span>
+                    <span>Bảo hành 12 tháng chính hãng</span>
                   </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-600">
-                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
-                      <i className="fas fa-check text-green-600 text-xs" />
+                  <li className='flex items-start gap-2 text-sm text-gray-600'>
+                    <div className='w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5'>
+                      <i className='fas fa-check text-green-600 text-xs' />
                     </div>
-                    <span>
-                      Hỗ trợ đổi mới trong 30 ngày
-                    </span>
+                    <span>Hỗ trợ đổi mới trong 30 ngày</span>
                   </li>
                 </ul>
               </div>
@@ -357,31 +341,21 @@ const ProductDetail: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="md:col-span-2 bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Đặc điểm nổi bật
-            </h2>
-            <div
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: product.description }}
-            />
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-12'>
+          <div className='md:col-span-2 bg-white rounded-2xl shadow-sm p-6'>
+            <h2 className='text-xl font-bold mb-4 text-gray-900'>Đặc điểm nổi bật</h2>
+            <div className='prose max-w-none' dangerouslySetInnerHTML={{ __html: product.description }} />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Thông số kỹ thuật
-            </h2>
-            <dl className="space-y-3">
+          <div className='bg-white rounded-2xl shadow-sm p-6'>
+            <h2 className='text-xl font-bold mb-4 text-gray-900'>Thông số kỹ thuật</h2>
+            <dl className='space-y-3'>
               {specifications
-                .filter(spec => spec.value)
+                .filter((spec) => spec.value)
                 .map((spec) => (
-                  <div
-                    key={spec.label}
-                    className="grid grid-cols-2 py-2 border-b border-gray-100 last:border-0"
-                  >
-                    <dt className="text-gray-600">{spec.label}</dt>
-                    <dd className="text-gray-900 font-medium">{spec.value}</dd>
+                  <div key={spec.label} className='grid grid-cols-2 py-2 border-b border-gray-100 last:border-0'>
+                    <dt className='text-gray-600'>{spec.label}</dt>
+                    <dd className='text-gray-900 font-medium'>{spec.value}</dd>
                   </div>
                 ))}
             </dl>
@@ -389,16 +363,11 @@ const ProductDetail: React.FC = () => {
         </div>
 
         {similarProducts.length > 0 && (
-          <section className="bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
-              Sản phẩm tương tự
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <section className='bg-white rounded-2xl shadow-sm p-6'>
+            <h2 className='text-xl font-bold text-gray-900 mb-6'>Sản phẩm tương tự</h2>
+            <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4'>
               {similarProducts.map((item) => (
-                <ProductCard
-                  key={item.id}
-                  item={item}
-                />
+                <ProductCard key={item.id} item={item} />
               ))}
             </div>
           </section>
