@@ -2,36 +2,27 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import SearchBar from './components/searchBar'
-import { listUser } from '@/api/user'
+import useAuthUser from '../hooks/useAuthUser'
+import { signout } from '@/api/user'
+import { UserType } from '@/type/user'
 
 const Header = () => {
-  const [auth, setAuth] = useState<any>('')
+  const { auth: user, loading } = useAuthUser()
+  const [auth, setAuth] = useState(user)
   const navigate = useNavigate()
   const { cartCount, updateCartCount } = useCart()
   const [isScrolled, setIsScrolled] = useState(false)
-  const user = listUser()
-
-  const grabMe = async () => {
-    const { data } = await listUser()
-    if (Array.isArray(data)) {
-      setAuth(data.at(0))
-    } else setAuth(data)
-  }
-
-  useEffect(() => {
-    if (user) {
-      setAuth(user)
-    } else {
-      setAuth('')
-    }
-  }, [JSON.stringify(user)])
 
   useEffect(() => {
     updateCartCount()
   })
 
   useEffect(() => {
-    void grabMe()
+    if (loading) return
+    setAuth(user)
+  }, [loading])
+
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
     }
@@ -39,12 +30,14 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const logout = () => {
-    localStorage.removeItem('userInfo')
-    localStorage.removeItem('token')
-    setAuth('')
-    navigate('/')
-    window.location.reload()
+  const logout = async () => {
+    try {
+      await signout()
+      setAuth({} as UserType)
+      navigate(0)
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
   }
 
   return (

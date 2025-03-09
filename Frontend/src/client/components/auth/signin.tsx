@@ -11,6 +11,7 @@ const Signin: React.FC = () => {
     if (data?.code === '00') {
       message.success('Đăng nhập tài khoản thành công')
       navigate('/')
+      window.location.reload()
     } else message.error(data?.message)
   }
 

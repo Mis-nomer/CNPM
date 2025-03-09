@@ -6,8 +6,8 @@ const Signup = () => {
   const navigate = useNavigate()
 
   const onFinish = async (values: any) => {
-    console.log('Success:', values)
     const { data } = await signup(values)
+
     if (data?.data !== null) {
       message.success('Đăng ký tài khoản thành công')
       navigate('/signin')

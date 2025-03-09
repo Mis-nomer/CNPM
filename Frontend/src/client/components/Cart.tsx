@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import useAuthUser from '../../hooks/useAuthUser'
+import { ProductType } from '@/type/Product'
 
 interface Product {
   id: number
@@ -45,12 +46,26 @@ const Cart = () => {
       if (authLoading) return
       setLoading(true)
       const result = await getCartService(String(userInfo.id))
-      setCarts(result.data)
+      const products = result.data.included as { attributes: ProductType; id: string }[]
 
-      console.log(result)
+      const data = result.data
+        .map((item: any) => {
+          const product = products.find((prod) => prod.id === item.productId)
+
+          if (!product) return
+
+          item.products = { ...product.attributes, id: product.id }
+          return item
+        })
+        .filter(Boolean)
+
+      setCarts(data)
+
+      console.log(data)
+
       setCheckboxStates((prevState) => {
         const newCheckboxStates: { [key: number]: boolean } = {}
-        result.data.forEach((item: CartItem) => {
+        data.forEach((item: CartItem) => {
           newCheckboxStates[item.products.id] = prevState[item.products.id] || false
         })
         return newCheckboxStates
@@ -189,7 +204,7 @@ const Cart = () => {
                       >
                         {item.products.name}
                       </Link>
-                      <p className='mt-1 text-sm text-gray-500'>{formatNumber(item.products.price)}</p>
+                      <p className='mt-1 text-sm text-gray-500'>{formatNumber(item.products.price ?? 0)}</p>
                     </div>
 
                     <div className='flex items-center gap-2'>

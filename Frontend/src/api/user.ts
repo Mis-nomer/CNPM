@@ -30,3 +30,8 @@ export const signin = (user: {}) => {
     const url = `/login`;
     return instance.post(url, user);
 }
+
+export const signout = () => {
+    const url = `/logout`;
+    return instance.post(url);
+}

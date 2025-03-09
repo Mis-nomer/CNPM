@@ -5,6 +5,7 @@ import { RestApiHandler } from '@zenstackhq/server/api';
 import prisma from './prisma';
 import { getCurrentUser } from './routes/auth';
 import loginHandler from './routes/login';
+import logoutHandler from './routes/logout';
 
 declare global {
     interface BigInt {
@@ -24,6 +25,8 @@ const handler = RestApiHandler({ endpoint: 'http://localhost:3000/api/model' });
 
 
 app.post("/api/model/login", loginHandler)
+app.post("/api/model/logout", logoutHandler)
+
 
 app.use(
     '/api/model/*',

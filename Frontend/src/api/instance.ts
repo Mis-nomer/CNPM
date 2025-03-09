@@ -26,12 +26,16 @@ instance.interceptors.request.use((config) => {
 
 instance.interceptors.response.use((response) => {
   if (response.data !== undefined && Array.isArray(response.data?.data)) {
+    const included = response.data?.included;
+
     response.data = (response.data?.data).map(({ attributes, id }: { attributes: any, id: number }) => ({ ...attributes, id }));
+    response.data.included = included
+
     return response
   }
   else if (response.data) {
     const url = String(response.request.responseURL)
-    if (url.includes("login")) {
+    if (url.includes("log")) {
       return response
     }
     response.data = { data: { ...response.data.data.attributes, included: response.data?.included, id: response.data.data.id } }
